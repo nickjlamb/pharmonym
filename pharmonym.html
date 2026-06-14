@@ -1,0 +1,1241 @@
+<!-- Pharmonym — Clinical Editorial Embed for Webflow -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,600;1,6..72,300;1,6..72,400&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
+<style>
+/* === RESET & TOKENS === */
+.ph-page *, .ph-page *::before, .ph-page *::after { margin: 0; padding: 0; box-sizing: border-box; }
+.ph-page {
+--ink: #0f1a2e;
+--paper: #ffffff;
+--off-white: #f7f8fa;
+--teal: #0d7377;
+--teal-light: #e6f3f3;
+--muted: #6b7b8d;
+--rule: #e2e5ea;
+--warm: #c45d3e;
+font-family: 'Inter', -apple-system, sans-serif !important;
+color: var(--ink) !important;
+background: var(--paper) !important;
+line-height: 1.6 !important;
+-webkit-font-smoothing: antialiased;
+font-size: 17px !important;
+}
+.ph-page a { color: var(--teal); text-decoration: none; }
+.ph-page a:hover { text-decoration: underline; }
+.ph-width { max-width: 960px; margin: 0 auto; padding: 0 2rem; }
+/* Hero stays a comfortable reading width even as the tool widens */
+.ph-hero .ph-width { max-width: 720px; }
+
+/* Two-column grid for the short detail cards */
+.ph-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem; align-items: start; }
+.ph-card-grid .ph-info-card { margin-top: 0; }
+@media (max-width: 640px) { .ph-card-grid { grid-template-columns: 1fr; } }
+
+/* === HERO === */
+.ph-hero {
+padding: 4.5rem 0 3rem;
+border-bottom: 1px solid var(--rule);
+text-align: center;
+}
+.ph-hero-kicker {
+font-family: 'Fira Code', monospace !important;
+font-size: 0.72rem;
+font-weight: 400;
+letter-spacing: 0.15em;
+text-transform: uppercase;
+color: var(--teal);
+margin-bottom: 1.25rem;
+}
+.ph-hero h1 {
+font-family: 'Newsreader', serif !important;
+font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+font-weight: 400;
+line-height: 1.12;
+letter-spacing: -0.02em;
+color: var(--ink);
+margin-bottom: 0.75rem;
+}
+.ph-hero-sub {
+font-size: 1.05rem;
+color: var(--muted);
+font-weight: 300;
+line-height: 1.5;
+}
+
+/* === TOOL SECTION === */
+.ph-tool {
+padding: 3rem 0 4rem;
+}
+
+/* === INPUT === */
+.ph-input-wrap {
+position: relative;
+display: flex;
+align-items: center;
+gap: 0.75rem;
+margin-bottom: 0.75rem;
+}
+.ph-autocomplete-container {
+position: relative;
+flex: 1;
+}
+.ph-input {
+width: 100%;
+padding: 0.9rem 2.5rem 0.9rem 1rem;
+border: 1.5px solid var(--rule);
+border-radius: 3px;
+font-size: 0.95rem;
+font-family: 'Inter', sans-serif !important;
+background: var(--paper);
+color: var(--ink);
+transition: border-color 0.2s;
+}
+.ph-input:focus {
+outline: none;
+border-color: var(--teal);
+box-shadow: 0 0 0 3px rgba(13, 115, 119, 0.08);
+}
+.ph-input::placeholder { color: #b0b8c4; }
+.ph-input-clear {
+position: absolute;
+right: 0.75rem;
+top: 50%;
+transform: translateY(-50%);
+background: none;
+border: none;
+color: var(--muted);
+font-size: 1rem;
+cursor: pointer;
+display: none;
+padding: 0.2rem;
+line-height: 1;
+}
+.ph-input-clear:hover { color: var(--warm); }
+
+/* === QUICK TRY === */
+.ph-quick-try {
+display: flex;
+align-items: center;
+flex-wrap: wrap;
+gap: 0.5rem;
+margin-bottom: 1.25rem;
+}
+.ph-quick-label {
+font-family: 'Fira Code', monospace !important;
+font-size: 0.7rem;
+color: var(--muted);
+letter-spacing: 0.08em;
+text-transform: uppercase;
+}
+.ph-quick-btn {
+padding: 0.35rem 0.85rem;
+background: var(--off-white);
+border: 1px solid var(--rule);
+border-radius: 2px;
+font-size: 0.78rem;
+font-family: 'Fira Code', monospace !important;
+color: var(--muted);
+cursor: pointer;
+transition: all 0.15s;
+letter-spacing: 0.02em;
+}
+.ph-quick-btn:hover {
+background: var(--teal);
+border-color: var(--teal);
+color: #fff;
+}
+
+/* === BUTTONS === */
+.ph-actions {
+display: flex;
+align-items: center;
+gap: 0.75rem;
+margin-bottom: 1.5rem;
+}
+.ph-convert-btn {
+background: var(--ink);
+color: #fff !important;
+padding: 0.7rem 1.5rem;
+border: none;
+border-radius: 3px;
+font-size: 0.85rem;
+font-weight: 500;
+font-family: 'Inter', sans-serif !important;
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: 0.5rem;
+transition: background 0.2s;
+letter-spacing: 0.02em;
+}
+.ph-convert-btn:hover { background: var(--teal); }
+.ph-convert-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ph-action-btn {
+padding: 0.5rem 1rem;
+background: var(--off-white);
+border: 1px solid var(--rule);
+border-radius: 3px;
+font-size: 0.8rem;
+font-family: 'Inter', sans-serif !important;
+cursor: pointer;
+display: inline-flex;
+align-items: center;
+gap: 0.4rem;
+color: var(--muted);
+transition: all 0.2s;
+}
+.ph-action-btn:hover {
+background: var(--paper);
+border-color: var(--teal);
+color: var(--ink);
+}
+
+.ph-new-search-btn {
+margin-left: auto;
+}
+
+/* === SPINNER === */
+.ph-spinner {
+border: 2px solid rgba(255,255,255,0.3);
+border-top: 2px solid #fff;
+border-radius: 50%;
+width: 14px;
+height: 14px;
+animation: ph-spin 1s linear infinite;
+display: inline-block;
+}
+@keyframes ph-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.hidden { display: none !important; }
+
+/* === OUTPUT === */
+.ph-output {
+width: 100%;
+padding: 0;
+border: none;
+font-size: 0.9rem;
+background: transparent;
+color: var(--ink);
+line-height: 1.7;
+font-family: 'Inter', sans-serif !important;
+}
+.ph-output:empty { display: none; }
+
+/* === EMPTY STATE === */
+.ph-empty-state {
+margin: 1.5rem auto 0;
+max-width: 620px;
+padding: 2rem 1.75rem;
+background: var(--off-white);
+border: 1px dashed var(--rule);
+border-radius: 4px;
+text-align: center;
+}
+.ph-empty-state.hidden { display: none; }
+.ph-empty-state p {
+font-size: 0.88rem;
+color: var(--muted);
+line-height: 1.6;
+}
+.ph-empty-state p strong {
+color: var(--ink);
+font-weight: 500;
+}
+
+/* === RESULT STYLES === */
+.drug-name-header {
+background: var(--ink);
+color: #fff;
+padding: 1rem 1.25rem;
+border-radius: 4px;
+margin-bottom: 1.25rem;
+display: flex;
+align-items: center;
+gap: 0.75rem;
+font-size: 0.9rem;
+font-weight: 500;
+font-family: 'Inter', sans-serif !important;
+}
+.drug-name-header .drug-icon { font-size: 1.2rem; }
+
+.drug-name-result {
+background: var(--teal-light);
+border-left: 3px solid var(--teal);
+padding: 0.9rem 1.25rem;
+border-radius: 4px;
+margin-bottom: 1.25rem;
+display: flex;
+align-items: center;
+gap: 0.75rem;
+font-size: 0.9rem;
+font-weight: 500;
+color: var(--ink);
+}
+.drug-name-result .drug-icon { font-size: 1.1rem; color: var(--teal); }
+.drug-icon.generic { color: var(--teal); }
+.drug-icon.brand { color: var(--teal); }
+.drug-icon { flex-shrink: 0; }
+
+.brand-names-header {
+background: var(--off-white);
+border-left: 3px solid var(--ink);
+padding: 0.9rem 1.25rem;
+border-radius: 4px;
+margin-bottom: 0.75rem;
+display: flex;
+align-items: center;
+gap: 0.75rem;
+font-size: 0.9rem;
+font-weight: 500;
+color: var(--ink);
+}
+.brand-names-header .drug-icon { font-size: 1.1rem; color: var(--ink); }
+
+.region {
+margin-top: 0.75rem;
+padding: 0.75rem;
+background: var(--off-white);
+border-radius: 4px;
+border-left: 2px solid var(--teal);
+font-size: 0.85rem;
+}
+.region:first-of-type { margin-top: 0.5rem; }
+
+/* === RESULT DIVIDER === */
+.ph-result-divider {
+border: none;
+border-top: 1px solid var(--rule);
+margin: 1.5rem 0 0.75rem;
+}
+
+/* === QUICK TRY STATES === */
+.ph-quick-try.dimmed { opacity: 0.3; pointer-events: none; transition: opacity 0.3s; }
+
+/* === INFO CARDS === */
+.ph-info-card {
+margin-top: 0.75rem;
+border-left: 3px solid var(--rule);
+padding: 1rem 1.25rem;
+background: var(--off-white);
+border-radius: 0 4px 4px 0;
+}
+.ph-info-card.ph-card-classify { border-left-color: var(--teal); }
+.ph-info-card.ph-card-uses { border-left-color: var(--ink); }
+.ph-info-card.ph-card-dosage { border-left-color: #5b7a9d; }
+.ph-info-card.ph-card-side { border-left-color: var(--warm); }
+.ph-info-card.ph-card-warn { border-left-color: #b8860b; }
+
+.ph-card-label {
+font-family: 'Fira Code', monospace !important;
+font-size: 0.68rem;
+font-weight: 400;
+letter-spacing: 0.12em;
+text-transform: uppercase;
+color: var(--muted);
+margin-bottom: 0.5rem;
+display: flex;
+align-items: center;
+gap: 0.5rem;
+}
+.ph-card-label i { font-size: 0.75rem; }
+.ph-card-body {
+font-size: 0.85rem;
+line-height: 1.7;
+color: var(--ink);
+white-space: pre-wrap;
+}
+.ph-card-body strong { font-weight: 600; }
+
+/* === SOURCE PROVENANCE BADGES === */
+.ph-source-badge {
+display: inline-flex;
+align-items: center;
+gap: 0.3rem;
+padding: 0.12rem 0.5rem;
+border-radius: 2px;
+font-family: 'Fira Code', monospace !important;
+font-size: 0.6rem;
+font-weight: 400;
+letter-spacing: 0.06em;
+text-transform: uppercase;
+margin-left: auto;
+}
+.ph-source-badge.sourced { background: var(--teal-light); color: var(--teal); }
+.ph-source-badge.ai { background: #fef9e7; color: #8a6d00; }
+.ph-source-badge.ai-sum { background: #eef2fb; color: #3a5a9b; }
+.ph-card-label { align-items: center; }
+
+/* At-a-glance AI summary body */
+.ph-glance {
+font-size: 0.92rem;
+line-height: 1.6;
+color: var(--ink);
+}
+/* Collapsible verbatim label text */
+.ph-fulltext { margin-top: 0.85rem; }
+.ph-fulltext > summary {
+cursor: pointer;
+font-family: 'Fira Code', monospace !important;
+font-size: 0.68rem;
+letter-spacing: 0.06em;
+text-transform: uppercase;
+color: var(--muted);
+list-style: none;
+display: inline-flex;
+align-items: center;
+gap: 0.4rem;
+}
+.ph-fulltext > summary::-webkit-details-marker { display: none; }
+.ph-fulltext > summary::before { content: "\f078"; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 0.6rem; transition: transform 0.2s; }
+.ph-fulltext[open] > summary::before { transform: rotate(180deg); }
+.ph-fulltext > summary:hover { color: var(--teal); }
+
+/* Region block inside a sourced card */
+.ph-region-block { margin-top: 0.75rem; }
+.ph-region-block:first-of-type { margin-top: 0; }
+.ph-region-head {
+display: flex;
+align-items: center;
+gap: 0.4rem;
+font-family: 'Fira Code', monospace !important;
+font-size: 0.66rem;
+letter-spacing: 0.06em;
+text-transform: uppercase;
+color: var(--ink);
+font-weight: 400;
+margin-bottom: 0.35rem;
+}
+.ph-region-flag {
+font-size: 0.62rem;
+padding: 0.05rem 0.4rem;
+border-radius: 2px;
+background: var(--ink);
+color: #fff;
+letter-spacing: 0.04em;
+}
+.ph-region-block.us .ph-region-flag { background: #1a3a6b; }
+.ph-region-block.uk .ph-region-flag { background: #0d7377; }
+.ph-cite {
+margin-top: 0.4rem;
+font-size: 0.7rem;
+color: var(--muted);
+line-height: 1.4;
+}
+.ph-cite a { color: var(--teal); }
+.ph-cite i { font-size: 0.62rem; margin-right: 0.2rem; }
+
+/* === COMPARE US vs UK PANEL === */
+.ph-compare {
+margin-top: 1.5rem;
+border: 1px solid var(--rule);
+border-radius: 4px;
+overflow: hidden;
+}
+.ph-compare-head {
+padding: 0.95rem 1.1rem 0.5rem;
+display: flex;
+align-items: center;
+gap: 0.5rem;
+font-family: 'Inter', sans-serif !important;
+font-size: 0.85rem;
+font-weight: 600;
+color: var(--ink);
+}
+.ph-diff { padding: 0 1.1rem 0.4rem; }
+.ph-diff-list { margin: 0.3rem 0 0; padding-left: 1.1rem; }
+.ph-diff-list li { font-size: 0.85rem; line-height: 1.55; color: var(--ink); margin-bottom: 0.3rem; }
+.ph-compare-details { padding: 0 1.1rem 1.1rem; }
+.ph-compare-details > summary {
+cursor: pointer;
+font-family: 'Fira Code', monospace !important;
+font-size: 0.68rem;
+letter-spacing: 0.06em;
+text-transform: uppercase;
+color: var(--muted);
+list-style: none;
+display: inline-flex;
+align-items: center;
+gap: 0.4rem;
+padding: 0.5rem 0;
+}
+.ph-compare-details > summary::-webkit-details-marker { display: none; }
+.ph-compare-details > summary::before { content: "\f078"; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 0.6rem; transition: transform 0.2s; }
+.ph-compare-details[open] > summary::before { transform: rotate(180deg); }
+.ph-compare-details > summary:hover { color: var(--teal); }
+.ph-compare-srcs {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 0.75rem;
+padding: 0.9rem 0 0.75rem;
+position: sticky;
+top: 0;
+background: var(--paper);
+}
+.ph-compare-srchead {
+font-family: 'Fira Code', monospace !important;
+font-size: 0.66rem;
+letter-spacing: 0.05em;
+text-transform: uppercase;
+color: var(--ink);
+}
+.ph-compare-srchead .ph-region-flag { margin-right: 0.4rem; }
+.ph-compare-srchead a { display: block; margin-top: 0.2rem; font-size: 0.68rem; }
+.ph-compare-topic {
+font-family: 'Fira Code', monospace !important;
+font-size: 0.68rem;
+letter-spacing: 0.08em;
+text-transform: uppercase;
+color: var(--muted);
+padding: 0.7rem 0 0.4rem;
+border-top: 1px solid var(--rule);
+margin-top: 0.5rem;
+}
+.ph-compare-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.ph-compare-cell {
+font-size: 0.8rem;
+line-height: 1.6;
+color: var(--ink);
+white-space: pre-wrap;
+background: var(--off-white);
+border-radius: 4px;
+padding: 0.7rem 0.8rem;
+border-top: 2px solid var(--rule);
+}
+.ph-compare-cell.us { border-top-color: #1a3a6b; }
+.ph-compare-cell.uk { border-top-color: var(--teal); }
+.ph-compare-cell .ph-cell-flag {
+display: none;
+font-family: 'Fira Code', monospace !important;
+font-size: 0.6rem;
+letter-spacing: 0.05em;
+color: var(--muted);
+margin-bottom: 0.35rem;
+}
+.ph-compare-cell.empty { color: var(--muted); font-style: italic; background: transparent; }
+@media (max-width: 640px) {
+.ph-compare-srcs, .ph-compare-row { grid-template-columns: 1fr; }
+.ph-compare-cell .ph-cell-flag { display: block; }
+}
+
+/* === SIDE EFFECTS === */
+.side-effect-type {
+display: inline-block;
+padding: 0.2rem 0.6rem;
+border-radius: 2px;
+font-weight: 600;
+font-size: 0.72rem;
+font-family: 'Fira Code', monospace !important;
+letter-spacing: 0.05em;
+text-transform: uppercase;
+margin-bottom: 0.5rem;
+margin-top: 0.5rem;
+}
+.side-effect-type.mild { background: #fef9e7; color: #8a6d00; }
+.side-effect-type.serious { background: #fdf0ec; color: var(--warm); }
+
+/* === SKELETON === */
+.skeleton {
+background: linear-gradient(90deg, var(--off-white) 25%, var(--rule) 50%, var(--off-white) 75%);
+background-size: 200% 100%;
+animation: ph-skeleton 1.5s ease-in-out infinite;
+border-radius: 3px;
+}
+@keyframes ph-skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.skeleton-header { height: 52px; margin-bottom: 1.25rem; border-radius: 4px; }
+.skeleton-result-box { height: 44px; margin-bottom: 1.25rem; border-radius: 4px; }
+.skeleton-section { margin-top: 0.75rem; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+.skeleton-section-header { height: 44px; background: linear-gradient(90deg, var(--off-white) 25%, var(--rule) 50%, var(--off-white) 75%); background-size: 200% 100%; animation: ph-skeleton 1.5s ease-in-out infinite; }
+
+/* === AUTOCOMPLETE === */
+.autocomplete-results {
+position: absolute;
+top: 100%;
+left: 0;
+right: 0;
+background: var(--paper);
+border: 1.5px solid var(--teal);
+border-top: 1px solid var(--rule);
+border-radius: 0 0 3px 3px;
+max-height: 320px;
+overflow-y: auto;
+z-index: 1000;
+box-shadow: 0 6px 16px rgba(13, 115, 119, 0.1);
+display: none;
+}
+.autocomplete-item {
+padding: 0.7rem 1rem;
+cursor: pointer;
+transition: all 0.1s;
+font-family: 'Inter', sans-serif !important;
+font-size: 0.85rem;
+border-bottom: 1px solid var(--off-white);
+display: flex;
+flex-direction: column;
+gap: 0.2rem;
+}
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover { background: var(--off-white); }
+.autocomplete-item.selected {
+background: var(--teal-light);
+border-left: 3px solid var(--teal);
+}
+.autocomplete-item .drug-name {
+font-size: 0.88rem;
+color: var(--ink);
+font-weight: 500;
+}
+.autocomplete-item .drug-name strong { color: var(--teal); font-weight: 600; }
+.autocomplete-item .drug-type {
+font-size: 0.72rem;
+color: var(--muted);
+display: flex;
+align-items: center;
+gap: 0.35rem;
+}
+.autocomplete-item .drug-type i { font-size: 0.65rem; }
+.autocomplete-item .drug-type.brand,
+.autocomplete-item .drug-type.brand i { color: var(--ink); }
+.autocomplete-item .drug-type.generic,
+.autocomplete-item .drug-type.generic i { color: var(--teal); }
+
+/* === RESULT ACTION BUTTONS === */
+.action-buttons {
+display: flex;
+gap: 0.5rem;
+margin-top: 1rem;
+flex-wrap: wrap;
+}
+
+/* === FOOTNOTE === */
+.ph-footnote {
+margin-top: 2rem;
+font-size: 0.75rem;
+color: var(--muted);
+text-align: center;
+font-style: italic;
+line-height: 1.5;
+padding-top: 1.5rem;
+border-top: 1px solid var(--rule);
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+.ph-width { padding: 0 1.25rem; }
+.ph-hero { padding: 3rem 0 2rem; }
+.ph-tool { padding: 2rem 0 3rem; }
+.ph-quick-try {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 0.4rem;
+}
+.ph-quick-label { grid-column: 1 / -1; }
+.ph-quick-btn { text-align: center; }
+.ph-actions { flex-wrap: wrap; }
+.ph-new-search-btn { margin-left: 0; }
+.autocomplete-results { max-height: 250px; }
+}
+@media (max-width: 480px) {
+.ph-hero h1 { font-size: 1.85rem; }
+.ph-quick-try { grid-template-columns: repeat(2, 1fr); }
+.ph-convert-btn { width: 100%; justify-content: center; }
+}
+</style>
+
+<div class="ph-page">
+
+<!-- HERO -->
+<section class="ph-hero">
+<div class="ph-width">
+<div class="ph-hero-kicker">Pharmonym</div>
+<h1>Brand Name ⇄ Generic Name</h1>
+<p class="ph-hero-sub">Convert between brand and generic drug names, with at-a-glance summaries from official FDA and UK labels — and a side-by-side US vs UK comparison.</p>
+</div>
+</section>
+
+<!-- TOOL -->
+<section class="ph-tool">
+<div class="ph-width">
+<div class="pharmonym-container" style="position: relative;">
+
+<!-- Input -->
+<div class="ph-input-wrap">
+<div class="ph-autocomplete-container autocomplete-container">
+<input type="text" id="inputText" class="ph-input custom-input" placeholder="e.g., Lipitor, Atorvastatin, Humira…" aria-label="Drug name input field" autocomplete="off">
+<button id="inputClearBtn" class="ph-input-clear" aria-label="Clear">&times;</button>
+<div id="autocompleteResults" class="autocomplete-results"></div>
+</div>
+</div>
+
+<!-- Quick Try -->
+<div class="ph-quick-try quick-try-section">
+<span class="ph-quick-label">Try:</span>
+<button class="ph-quick-btn quick-try-btn" data-drug="Lipitor" data-action="quick-try">Lipitor</button>
+<button class="ph-quick-btn quick-try-btn" data-drug="Humira" data-action="quick-try">Humira</button>
+<button class="ph-quick-btn quick-try-btn" data-drug="Keytruda" data-action="quick-try">Keytruda</button>
+<button class="ph-quick-btn quick-try-btn" data-drug="Eliquis" data-action="quick-try">Eliquis</button>
+<button class="ph-quick-btn quick-try-btn" data-drug="Ozempic" data-action="quick-try">Ozempic</button>
+<button class="ph-quick-btn quick-try-btn" data-drug="Nexium" data-action="quick-try">Nexium</button>
+</div>
+
+<!-- Actions -->
+<div class="ph-actions">
+<button id="convertButton" class="ph-convert-btn custom-button" aria-label="Convert drug name" data-action="convert">
+<span class="button-text">Convert</span>
+<span id="buttonSpinner" class="ph-spinner hidden"></span>
+</button>
+<!-- clear moved inside input -->
+<button id="newSearchButton" class="ph-action-btn ph-new-search-btn action-btn hidden" aria-label="New search" data-action="new-search">
+<i class="fa-solid fa-rotate-right"></i> New Search
+</button>
+</div>
+
+<!-- Output -->
+<div id="outputText" class="ph-output custom-output" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Empty State -->
+<div id="emptyState" class="ph-empty-state">
+<p><strong>How it works</strong></p>
+<p>Enter any brand or generic drug name to see its equivalent, drug classification, common uses, typical dosage, side effects, and safety warnings.</p>
+</div>
+
+<!-- Action Buttons (after results) -->
+<div id="actionButtons" class="action-buttons hidden">
+<button id="copyButton" class="ph-action-btn" aria-label="Copy to clipboard" data-action="copy">
+<i class="fa-regular fa-copy"></i> Copy All
+</button>
+</div>
+
+<!-- Footnote -->
+<p class="ph-footnote">"At a glance" summaries are AI-generated from official prescribing information (FDA / UK SmPC) and condense the full label text shown beneath each card, with source links. Not a substitute for professional medical advice. Always verify with the full prescribing information or your pharmacist.</p>
+
+</div>
+</div>
+</section>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+const inputText = document.getElementById('inputText');
+const outputText = document.getElementById('outputText');
+const convertButton = document.getElementById('convertButton');
+const inputClearBtn = document.getElementById('inputClearBtn');
+const quickTrySection = document.querySelector('.ph-quick-try');
+const buttonText = convertButton.querySelector('.button-text');
+const buttonSpinner = document.getElementById('buttonSpinner');
+const actionButtons = document.getElementById('actionButtons');
+const copyButton = document.getElementById('copyButton');
+const newSearchButton = document.getElementById('newSearchButton');
+const autocompleteResults = document.getElementById('autocompleteResults');
+
+// Drug database
+const drugDatabase = [
+// Cardiovascular
+{ name: 'Lipitor', type: 'brand', generic: 'Atorvastatin' },
+{ name: 'Atorvastatin', type: 'generic', brand: 'Lipitor' },
+{ name: 'Crestor', type: 'brand', generic: 'Rosuvastatin' },
+{ name: 'Rosuvastatin', type: 'generic', brand: 'Crestor' },
+{ name: 'Eliquis', type: 'brand', generic: 'Apixaban' },
+{ name: 'Apixaban', type: 'generic', brand: 'Eliquis' },
+{ name: 'Xarelto', type: 'brand', generic: 'Rivaroxaban' },
+{ name: 'Rivaroxaban', type: 'generic', brand: 'Xarelto' },
+{ name: 'Plavix', type: 'brand', generic: 'Clopidogrel' },
+{ name: 'Clopidogrel', type: 'generic', brand: 'Plavix' },
+{ name: 'Metoprolol', type: 'generic', brand: 'Lopressor' },
+{ name: 'Lopressor', type: 'brand', generic: 'Metoprolol' },
+{ name: 'Lisinopril', type: 'generic', brand: 'Prinivil' },
+{ name: 'Prinivil', type: 'brand', generic: 'Lisinopril' },
+{ name: 'Norvasc', type: 'brand', generic: 'Amlodipine' },
+{ name: 'Amlodipine', type: 'generic', brand: 'Norvasc' },
+{ name: 'Lasix', type: 'brand', generic: 'Furosemide' },
+{ name: 'Furosemide', type: 'generic', brand: 'Lasix' },
+// Diabetes
+{ name: 'Ozempic', type: 'brand', generic: 'Semaglutide' },
+{ name: 'Semaglutide', type: 'generic', brand: 'Ozempic' },
+{ name: 'Wegovy', type: 'brand', generic: 'Semaglutide' },
+{ name: 'Metformin', type: 'generic', brand: 'Glucophage' },
+{ name: 'Glucophage', type: 'brand', generic: 'Metformin' },
+{ name: 'Januvia', type: 'brand', generic: 'Sitagliptin' },
+{ name: 'Sitagliptin', type: 'generic', brand: 'Januvia' },
+{ name: 'Trulicity', type: 'brand', generic: 'Dulaglutide' },
+{ name: 'Dulaglutide', type: 'generic', brand: 'Trulicity' },
+{ name: 'Lantus', type: 'brand', generic: 'Insulin Glargine' },
+{ name: 'Insulin Glargine', type: 'generic', brand: 'Lantus' },
+// Biologics/Immunology
+{ name: 'Humira', type: 'brand', generic: 'Adalimumab' },
+{ name: 'Adalimumab', type: 'generic', brand: 'Humira' },
+{ name: 'Enbrel', type: 'brand', generic: 'Etanercept' },
+{ name: 'Etanercept', type: 'generic', brand: 'Enbrel' },
+{ name: 'Remicade', type: 'brand', generic: 'Infliximab' },
+{ name: 'Infliximab', type: 'generic', brand: 'Remicade' },
+{ name: 'Stelara', type: 'brand', generic: 'Ustekinumab' },
+{ name: 'Ustekinumab', type: 'generic', brand: 'Stelara' },
+{ name: 'Keytruda', type: 'brand', generic: 'Pembrolizumab' },
+{ name: 'Pembrolizumab', type: 'generic', brand: 'Keytruda' },
+{ name: 'Opdivo', type: 'brand', generic: 'Nivolumab' },
+{ name: 'Nivolumab', type: 'generic', brand: 'Opdivo' },
+// Antibiotics
+{ name: 'Amoxicillin', type: 'generic', brand: 'Amoxil' },
+{ name: 'Amoxil', type: 'brand', generic: 'Amoxicillin' },
+{ name: 'Augmentin', type: 'brand', generic: 'Amoxicillin-Clavulanate' },
+{ name: 'Amoxicillin-Clavulanate', type: 'generic', brand: 'Augmentin' },
+{ name: 'Azithromycin', type: 'generic', brand: 'Zithromax' },
+{ name: 'Zithromax', type: 'brand', generic: 'Azithromycin' },
+{ name: 'Cipro', type: 'brand', generic: 'Ciprofloxacin' },
+{ name: 'Ciprofloxacin', type: 'generic', brand: 'Cipro' },
+{ name: 'Doxycycline', type: 'generic', brand: 'Vibramycin' },
+{ name: 'Vibramycin', type: 'brand', generic: 'Doxycycline' },
+// Pain/Inflammation
+{ name: 'Advil', type: 'brand', generic: 'Ibuprofen' },
+{ name: 'Ibuprofen', type: 'generic', brand: 'Advil' },
+{ name: 'Tylenol', type: 'brand', generic: 'Acetaminophen' },
+{ name: 'Acetaminophen', type: 'generic', brand: 'Tylenol' },
+{ name: 'Celebrex', type: 'brand', generic: 'Celecoxib' },
+{ name: 'Celecoxib', type: 'generic', brand: 'Celebrex' },
+{ name: 'Lyrica', type: 'brand', generic: 'Pregabalin' },
+{ name: 'Pregabalin', type: 'generic', brand: 'Lyrica' },
+{ name: 'Neurontin', type: 'brand', generic: 'Gabapentin' },
+{ name: 'Gabapentin', type: 'generic', brand: 'Neurontin' },
+// Mental Health
+{ name: 'Prozac', type: 'brand', generic: 'Fluoxetine' },
+{ name: 'Fluoxetine', type: 'generic', brand: 'Prozac' },
+{ name: 'Zoloft', type: 'brand', generic: 'Sertraline' },
+{ name: 'Sertraline', type: 'generic', brand: 'Zoloft' },
+{ name: 'Lexapro', type: 'brand', generic: 'Escitalopram' },
+{ name: 'Escitalopram', type: 'generic', brand: 'Lexapro' },
+{ name: 'Xanax', type: 'brand', generic: 'Alprazolam' },
+{ name: 'Alprazolam', type: 'generic', brand: 'Xanax' },
+{ name: 'Ativan', type: 'brand', generic: 'Lorazepam' },
+{ name: 'Lorazepam', type: 'generic', brand: 'Ativan' },
+{ name: 'Abilify', type: 'brand', generic: 'Aripiprazole' },
+{ name: 'Aripiprazole', type: 'generic', brand: 'Abilify' },
+{ name: 'Adderall', type: 'brand', generic: 'Amphetamine-Dextroamphetamine' },
+{ name: 'Amphetamine-Dextroamphetamine', type: 'generic', brand: 'Adderall' },
+{ name: 'Ritalin', type: 'brand', generic: 'Methylphenidate' },
+{ name: 'Methylphenidate', type: 'generic', brand: 'Ritalin' },
+// Respiratory
+{ name: 'Advair', type: 'brand', generic: 'Fluticasone-Salmeterol' },
+{ name: 'Fluticasone-Salmeterol', type: 'generic', brand: 'Advair' },
+{ name: 'Symbicort', type: 'brand', generic: 'Budesonide-Formoterol' },
+{ name: 'Budesonide-Formoterol', type: 'generic', brand: 'Symbicort' },
+{ name: 'Albuterol', type: 'generic', brand: 'ProAir' },
+{ name: 'ProAir', type: 'brand', generic: 'Albuterol' },
+{ name: 'Ventolin', type: 'brand', generic: 'Albuterol' },
+{ name: 'Spiriva', type: 'brand', generic: 'Tiotropium' },
+{ name: 'Tiotropium', type: 'generic', brand: 'Spiriva' },
+// Gastrointestinal
+{ name: 'Nexium', type: 'brand', generic: 'Esomeprazole' },
+{ name: 'Esomeprazole', type: 'generic', brand: 'Nexium' },
+{ name: 'Prilosec', type: 'brand', generic: 'Omeprazole' },
+{ name: 'Omeprazole', type: 'generic', brand: 'Prilosec' },
+{ name: 'Zantac', type: 'brand', generic: 'Ranitidine' },
+{ name: 'Ranitidine', type: 'generic', brand: 'Zantac' },
+// Anticoagulants
+{ name: 'Coumadin', type: 'brand', generic: 'Warfarin' },
+{ name: 'Warfarin', type: 'generic', brand: 'Coumadin' },
+{ name: 'Pradaxa', type: 'brand', generic: 'Dabigatran' },
+{ name: 'Dabigatran', type: 'generic', brand: 'Pradaxa' },
+// Thyroid
+{ name: 'Synthroid', type: 'brand', generic: 'Levothyroxine' },
+{ name: 'Levothyroxine', type: 'generic', brand: 'Synthroid' },
+// Oncology
+{ name: 'Herceptin', type: 'brand', generic: 'Trastuzumab' },
+{ name: 'Trastuzumab', type: 'generic', brand: 'Herceptin' },
+{ name: 'Avastin', type: 'brand', generic: 'Bevacizumab' },
+{ name: 'Bevacizumab', type: 'generic', brand: 'Avastin' },
+{ name: 'Rituxan', type: 'brand', generic: 'Rituximab' },
+{ name: 'Rituximab', type: 'generic', brand: 'Rituxan' },
+// Antivirals
+{ name: 'Tamiflu', type: 'brand', generic: 'Oseltamivir' },
+{ name: 'Oseltamivir', type: 'generic', brand: 'Tamiflu' },
+{ name: 'Valtrex', type: 'brand', generic: 'Valacyclovir' },
+{ name: 'Valacyclovir', type: 'generic', brand: 'Valtrex' },
+// Other
+{ name: 'Viagra', type: 'brand', generic: 'Sildenafil' },
+{ name: 'Sildenafil', type: 'generic', brand: 'Viagra' },
+{ name: 'Cialis', type: 'brand', generic: 'Tadalafil' },
+{ name: 'Tadalafil', type: 'generic', brand: 'Cialis' },
+{ name: 'Ambien', type: 'brand', generic: 'Zolpidem' },
+{ name: 'Zolpidem', type: 'generic', brand: 'Ambien' },
+{ name: 'Benadryl', type: 'brand', generic: 'Diphenhydramine' },
+{ name: 'Diphenhydramine', type: 'generic', brand: 'Benadryl' },
+{ name: 'Claritin', type: 'brand', generic: 'Loratadine' },
+{ name: 'Loratadine', type: 'generic', brand: 'Claritin' },
+{ name: 'Zyrtec', type: 'brand', generic: 'Cetirizine' },
+{ name: 'Cetirizine', type: 'generic', brand: 'Zyrtec' },
+{ name: 'Allegra', type: 'brand', generic: 'Fexofenadine' },
+{ name: 'Fexofenadine', type: 'generic', brand: 'Allegra' }
+];
+
+let selectedIndex = -1;
+let debounceTimer = null;
+
+function generateSkeletonLoading() {
+return `<div class="skeleton skeleton-header"></div><div class="skeleton skeleton-result-box"></div><div class="skeleton-section"><div class="skeleton-section-header"></div></div><div class="skeleton-section"><div class="skeleton-section-header"></div></div><div class="skeleton-section"><div class="skeleton-section-header"></div></div><div class="skeleton-section"><div class="skeleton-section-header"></div></div><div class="skeleton-section"><div class="skeleton-section-header"></div></div>`;
+}
+
+// Escape untrusted label text pulled from external sources
+function escapeHtml(s) {
+return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+// Citation line for a sourced label
+function citeLine(lbl) {
+const updated = lbl.updated ? ` &middot; updated ${escapeHtml(lbl.updated)}` : '';
+return `<div class="ph-cite"><i class="fa-solid fa-book-medical"></i>Source: <a href="${escapeHtml(lbl.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(lbl.sourceLabel)}</a>${updated}</div>`;
+}
+
+// One region block (US or UK/EU) for a given field ('dosage' | 'warnings')
+function regionBlock(lbl, field) {
+if (!lbl || !lbl[field]) return '';
+const cls = lbl.region === 'US' ? 'us' : 'uk';
+const flag = lbl.region === 'US' ? 'US' : 'UK/EU';
+return `<div class="ph-region-block ${cls}">`
++ `<div class="ph-region-head"><span class="ph-region-flag">${flag}</span> ${escapeHtml(lbl.authority)}</div>`
++ `<div class="ph-card-body">${escapeHtml(lbl[field])}</div>`
++ citeLine(lbl)
++ `</div>`;
+}
+
+// Clinical card: leads with the grounded AI at-a-glance summary and tucks
+// the full official label text behind a toggle. Falls back to sourced-only,
+// then to legacy AI text, depending on what's available.
+function clinicalCard(opts) {
+const { cardClass, icon, title, glance, labels, field, aiFallback } = opts;
+const hasFull = labels && ((labels.us && labels.us[field]) || (labels.uk && labels.uk[field]));
+if (glance) {
+let body = `<div class="ph-glance">${escapeHtml(glance)}</div>`;
+if (hasFull) {
+const full = regionBlock(labels.us, field) + regionBlock(labels.uk, field);
+body += `<details class="ph-fulltext"><summary>Show full label text</summary>${full}</details>`;
+}
+return `<div class="ph-info-card ${cardClass}"><div class="ph-card-label">${icon}${title} <span class="ph-source-badge ai-sum" title="Summarised from the official label below"><i class="fa-solid fa-feather"></i>AI summary</span></div>${body}</div>`;
+}
+if (hasFull) {
+const full = regionBlock(labels.us, field) + regionBlock(labels.uk, field);
+return `<div class="ph-info-card ${cardClass}"><div class="ph-card-label">${icon}${title} <span class="ph-source-badge sourced"><i class="fa-solid fa-circle-check"></i>Official label</span></div>${full}</div>`;
+}
+return aiFallback ? (aiFallback() || '') : '';
+}
+
+// Trim long label text for the compact comparison cells
+function compareTruncate(s, n) {
+if (!s) return '';
+s = String(s);
+if (s.length <= n) return s;
+const cut = s.slice(0, n);
+const stop = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('\n'));
+return (stop > n * 0.5 ? cut.slice(0, stop + 1) : cut).trim() + ' …';
+}
+
+// Side-by-side US (FDA) vs UK/EU (SmPC) comparison across mapped topics,
+// led by an AI summary of the key differences.
+function buildCompare(labels, differences) {
+const us = labels.us, uk = labels.uk;
+if (!us || !uk) return '';
+const topics = [
+['Indications', 'indications'],
+['Dosing', 'dosage'],
+['Contraindications', 'contraindications'],
+['Warnings & Precautions', 'warnings'],
+['Adverse Reactions', 'adverse']
+];
+let rows = '';
+topics.forEach(([label, field]) => {
+const u = us[field], k = uk[field];
+if (!u && !k) return;
+const cell = (cls, flag, text) =>
+`<div class="ph-compare-cell ${cls}${text ? '' : ' empty'}"><span class="ph-cell-flag">${flag}</span>${text ? escapeHtml(compareTruncate(text, 520)) : 'Not stated in this label'}</div>`;
+rows += `<div class="ph-compare-topic">${label}</div><div class="ph-compare-row">`
++ cell('us', 'US · FDA', u)
++ cell('uk', 'UK/EU · SmPC', k)
++ `</div>`;
+});
+if (!rows) return '';
+const srcHead = (flagStyle, flag, lbl) =>
+`<div class="ph-compare-srchead"><span class="ph-region-flag" style="${flagStyle}">${flag}</span>${escapeHtml(lbl.authority)}<a href="${escapeHtml(lbl.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(lbl.sourceLabel)}${lbl.updated ? ' &middot; ' + escapeHtml(lbl.updated) : ''}</a></div>`;
+const srcs = `<div class="ph-compare-srcs">`
++ srcHead('background:#1a3a6b;', 'US', us)
++ srcHead('', 'UK/EU', uk)
++ `</div>`;
+let diffHtml = '';
+if (differences && differences.length) {
+diffHtml = `<div class="ph-diff"><ul class="ph-diff-list">${differences.map(d => `<li>${escapeHtml(d)}</li>`).join('')}</ul></div>`;
+}
+const head = `<div class="ph-compare-head"><i class="fa-solid fa-right-left"></i> US vs UK / EU labelling${differences && differences.length ? ' <span class="ph-source-badge ai-sum"><i class="fa-solid fa-feather"></i>AI summary</span>' : ''}</div>`;
+return `<div class="ph-compare">${head}${diffHtml}<details class="ph-compare-details"><summary>Show full side-by-side comparison</summary>${srcs}${rows}</details></div>`;
+}
+
+function searchDrugs(query) {
+if (!query || query.length < 2) return [];
+const searchTerm = query.toLowerCase();
+return drugDatabase.filter(d => d.name.toLowerCase().startsWith(searchTerm))
+.sort((a, b) => {
+const al = a.name.toLowerCase(), bl = b.name.toLowerCase();
+if (al === searchTerm) return -1;
+if (bl === searchTerm) return 1;
+return al.localeCompare(bl);
+}).slice(0, 8);
+}
+
+function highlightMatch(text, query) {
+const i = text.toLowerCase().indexOf(query.toLowerCase());
+if (i === -1) return text;
+return text.substring(0, i) + '<strong>' + text.substring(i, i + query.length) + '</strong>' + text.substring(i + query.length);
+}
+
+function showAutocomplete(matches, query) {
+autocompleteResults.innerHTML = '';
+selectedIndex = -1;
+if (matches.length === 0) { autocompleteResults.style.display = 'none'; return; }
+matches.forEach((drug, index) => {
+const item = document.createElement('div');
+item.className = 'autocomplete-item';
+item.dataset.index = index;
+item.dataset.name = drug.name;
+const nameSpan = document.createElement('span');
+nameSpan.className = 'drug-name';
+nameSpan.innerHTML = highlightMatch(drug.name, query);
+const typeSpan = document.createElement('span');
+typeSpan.className = `drug-type ${drug.type}`;
+typeSpan.innerHTML = drug.type === 'brand'
+? `<i class="fa-solid fa-prescription-bottle"></i> Brand → ${drug.generic}`
+: `<i class="fa-solid fa-capsules"></i> Generic → ${drug.brand}`;
+item.appendChild(nameSpan);
+item.appendChild(typeSpan);
+item.addEventListener('click', function() { selectAutocompleteItem(drug.name); });
+autocompleteResults.appendChild(item);
+});
+autocompleteResults.style.display = 'block';
+}
+
+function hideAutocomplete() { autocompleteResults.style.display = 'none'; autocompleteResults.innerHTML = ''; selectedIndex = -1; }
+function selectAutocompleteItem(name) { inputText.value = name; hideAutocomplete(); convertButton.click(); }
+function updateSelectedItem() {
+const items = autocompleteResults.querySelectorAll('.autocomplete-item');
+items.forEach((item, i) => {
+if (i === selectedIndex) { item.classList.add('selected'); item.scrollIntoView({ block: 'nearest' }); }
+else { item.classList.remove('selected'); }
+});
+}
+
+inputText.addEventListener('input', function() {
+const query = this.value.trim();
+inputClearBtn.style.display = query.length > 0 ? 'block' : 'none';
+clearTimeout(debounceTimer);
+if (query.length < 2) { hideAutocomplete(); return; }
+debounceTimer = setTimeout(() => showAutocomplete(searchDrugs(query), query), 150);
+});
+
+inputText.addEventListener('keydown', function(e) {
+const items = autocompleteResults.querySelectorAll('.autocomplete-item');
+if (items.length === 0) return;
+switch(e.key) {
+case 'ArrowDown': e.preventDefault(); selectedIndex = Math.min(selectedIndex + 1, items.length - 1); updateSelectedItem(); break;
+case 'ArrowUp': e.preventDefault(); selectedIndex = Math.max(selectedIndex - 1, -1); updateSelectedItem(); break;
+case 'Enter': if (selectedIndex >= 0) { e.preventDefault(); selectAutocompleteItem(items[selectedIndex].dataset.name); } break;
+case 'Escape': e.preventDefault(); hideAutocomplete(); break;
+}
+});
+
+document.addEventListener('click', function(e) {
+if (!inputText.contains(e.target) && !autocompleteResults.contains(e.target)) hideAutocomplete();
+});
+/* Ctrl+K shortcut removed */
+
+document.querySelectorAll('.quick-try-btn').forEach(btn => {
+btn.addEventListener('click', function() { inputText.value = this.getAttribute('data-drug'); inputText.focus(); convertButton.click(); });
+});
+
+const emptyState = document.getElementById('emptyState');
+function showEmptyState() { emptyState.classList.remove('hidden'); }
+function hideEmptyState() { emptyState.classList.add('hidden'); }
+
+function resetSearch() {
+inputText.value = ''; outputText.innerHTML = ''; outputText.classList.add('hidden');
+actionButtons.classList.add('hidden'); newSearchButton.classList.add('hidden');
+hideAutocomplete(); showEmptyState(); inputClearBtn.style.display = 'none';
+quickTrySection.classList.remove('dimmed');
+inputText.focus();
+}
+inputClearBtn.addEventListener('click', resetSearch);
+
+copyButton.addEventListener('click', function() {
+navigator.clipboard.writeText(outputText.innerText).then(() => {
+const orig = copyButton.innerHTML;
+copyButton.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+copyButton.style.borderColor = 'var(--teal)';
+copyButton.style.color = 'var(--teal)';
+setTimeout(() => { copyButton.innerHTML = orig; copyButton.style.borderColor = ''; copyButton.style.color = ''; }, 2000);
+});
+});
+
+newSearchButton.addEventListener('click', resetSearch);
+
+inputText.addEventListener('keypress', function(e) { if (e.key === 'Enter') handleConversion(e); });
+
+function handleConversion(event) {
+event.preventDefault();
+let inputName = inputText.value.trim();
+if (inputName === '') {
+outputText.innerHTML = '<div class="drug-name-result" style="border-left-color: #c45d3e; background-color: #fdf0ec;"><i class="fa-solid fa-exclamation-circle" style="color: #c45d3e;"></i> Please enter a drug name.</div>';
+outputText.classList.remove('hidden'); hideEmptyState(); return;
+}
+buttonText.textContent = 'Converting...';
+buttonSpinner.classList.remove('hidden');
+convertButton.disabled = true;
+actionButtons.classList.add('hidden');
+hideEmptyState();
+quickTrySection.classList.add('dimmed');
+outputText.innerHTML = `<div style="font-family:'Fira Code',monospace;font-size:0.75rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1rem;">Looking up ${inputName}…</div>` + generateSkeletonLoading();
+outputText.classList.remove('hidden');
+newSearchButton.classList.add('hidden');
+
+fetch('https://us-central1-rx-converter.cloudfunctions.net/convertDrugName', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ name: inputName })
+})
+.then(r => r.json())
+.then(result => {
+const messageContent = result.choices[0].message.content.trim();
+let parsedResult;
+try { parsedResult = JSON.parse(messageContent); }
+catch(error) {
+outputText.innerHTML = `<div class="drug-name-result" style="border-left-color: #c45d3e; background-color: #fdf0ec;"><i class="fa-solid fa-exclamation-circle" style="color: #c45d3e;"></i> <span>Error parsing response. <button onclick="document.getElementById('convertButton').click()" style="background:none;border:none;color:var(--teal);text-decoration:underline;cursor:pointer;padding:0;font-family:'Inter',sans-serif;">Try again</button></span></div>`;
+outputText.classList.remove('hidden'); return;
+}
+
+let outputString = `<div class="drug-name-header"><i class="fa-solid fa-pills drug-icon"></i><span>Input (${parsedResult.inputType}): <strong>${parsedResult.inputName}</strong></span></div>`;
+
+if (parsedResult.inputType === 'brand') {
+outputString += `<div class="drug-name-result"><i class="fa-solid fa-capsules drug-icon generic"></i><span><strong>Generic Name:</strong> ${parsedResult.genericName}</span></div>`;
+} else {
+outputString += `<div class="brand-names-header"><i class="fa-solid fa-prescription-bottle drug-icon brand"></i><span><strong>Brand Names:</strong></span></div>`;
+if (Array.isArray(parsedResult.brandNames)) {
+outputString += '<div style="padding:0.75rem 1rem;background:var(--off-white);border-radius:4px;margin-bottom:1rem;font-size:0.88rem;">' + parsedResult.brandNames.map(escapeHtml).join(", ") + "</div>";
+if (parsedResult.regionNote) {
+outputString += `<div class="ph-cite" style="margin-top:-0.5rem;margin-bottom:1rem;"><i class="fa-solid fa-circle-info"></i>${escapeHtml(parsedResult.regionNote)}</div>`;
+}
+} else {
+const regions = {
+"North America": ["US", "Canada"],
+"Europe": ["UK", "Germany", "France", "Italy", "Spain", "Switzerland"],
+"Asia": ["Japan", "India", "China", "South Korea", "Singapore"],
+"Oceania": ["Australia", "New Zealand"],
+"South America": ["Brazil", "Argentina", "Chile"]
+};
+for (const [region, countries] of Object.entries(regions)) {
+let regionString = `<div class="region"><strong>${region}:</strong> `;
+let regionHasBrands = false;
+for (const country of countries) {
+if (parsedResult.brandNames[country]) {
+regionString += `<strong>${country}:</strong> ${parsedResult.brandNames[country]} `;
+regionHasBrands = true;
+}
+}
+regionString += `</div>`;
+if (regionHasBrands) outputString += regionString;
+}
+outputString += " ";
+}
+}
+
+// Divider between name result and detail cards
+outputString += '<hr class="ph-result-divider">';
+
+// Classification
+if (parsedResult.drugClass || parsedResult.category) {
+let body = '';
+if (parsedResult.drugClass) body += `<strong>Drug Class:</strong> ${parsedResult.drugClass}\n`;
+if (parsedResult.category) body += `<strong>Category:</strong> ${parsedResult.category}`;
+outputString += `<div class="ph-info-card ph-card-classify"><div class="ph-card-label"><i class="fa-solid fa-flask"></i>Classification</div><div class="ph-card-body">${body}</div></div>`;
+}
+
+const labels = parsedResult.labels || {};
+const glance = (parsedResult.summary && parsedResult.summary.glance) || {};
+
+// Detail cards are collected into a 2-column grid
+let gridCards = '';
+
+// Common Uses — AI glance summary, else RxNorm indication list
+if (glance.uses) {
+gridCards += `<div class="ph-info-card ph-card-uses"><div class="ph-card-label"><i class="fa-solid fa-stethoscope"></i>Common Uses <span class="ph-source-badge ai-sum"><i class="fa-solid fa-feather"></i>AI summary</span></div><div class="ph-glance">${escapeHtml(glance.uses)}</div></div>`;
+} else if (parsedResult.uses && parsedResult.uses.length > 0) {
+let body = '';
+if (Array.isArray(parsedResult.uses)) { parsedResult.uses.forEach(u => { body += `• ${u}\n`; }); }
+else { body = parsedResult.uses; }
+gridCards += `<div class="ph-info-card ph-card-uses"><div class="ph-card-label"><i class="fa-solid fa-stethoscope"></i>Common Uses</div><div class="ph-card-body">${body}</div></div>`;
+}
+
+// Dosage
+gridCards += clinicalCard({
+cardClass: 'ph-card-dosage', icon: '<i class="fa-solid fa-prescription"></i>', title: 'Dosage',
+glance: glance.dosage, labels: labels, field: 'dosage',
+aiFallback: () => parsedResult.dosage ? `<div class="ph-info-card ph-card-dosage"><div class="ph-card-label"><i class="fa-solid fa-prescription"></i>Typical Dosage <span class="ph-source-badge ai"><i class="fa-solid fa-wand-magic-sparkles"></i>AI-generated</span></div><div class="ph-card-body">${parsedResult.dosage}</div></div>` : ''
+});
+
+// Side Effects
+gridCards += clinicalCard({
+cardClass: 'ph-card-side', icon: '<i class="fa-solid fa-triangle-exclamation"></i>', title: 'Side Effects',
+glance: glance.sideEffects, labels: labels, field: 'adverse',
+aiFallback: () => {
+const se = parsedResult.sideEffects;
+if (!se) return '';
+let body = '';
+if (se.mild && se.mild.length > 0) {
+body += `<span class="side-effect-type mild">Mild</span>\n`;
+if (Array.isArray(se.mild)) { se.mild.forEach(e => { body += `• ${e}\n`; }); } else { body += se.mild + "\n"; }
+}
+if (se.serious && se.serious.length > 0) {
+body += `<span class="side-effect-type serious">Serious</span>\n`;
+if (Array.isArray(se.serious)) { se.serious.forEach(e => { body += `• ${e}\n`; }); } else { body += se.serious + "\n"; }
+}
+return body ? `<div class="ph-info-card ph-card-side"><div class="ph-card-label"><i class="fa-solid fa-triangle-exclamation"></i>Side Effects <span class="ph-source-badge ai"><i class="fa-solid fa-wand-magic-sparkles"></i>AI-generated</span></div><div class="ph-card-body">${body}</div></div>` : '';
+}
+});
+
+// Warnings
+gridCards += clinicalCard({
+cardClass: 'ph-card-warn', icon: '<i class="fa-solid fa-shield-halved"></i>', title: 'Warnings',
+glance: glance.warnings, labels: labels, field: 'warnings',
+aiFallback: () => {
+if (!parsedResult.warnings || !parsedResult.warnings.length) return '';
+let body = '';
+if (Array.isArray(parsedResult.warnings)) { parsedResult.warnings.forEach(w => { body += `• ${w}\n`; }); }
+else { body = parsedResult.warnings; }
+return `<div class="ph-info-card ph-card-warn"><div class="ph-card-label"><i class="fa-solid fa-shield-halved"></i>Warnings <span class="ph-source-badge ai"><i class="fa-solid fa-wand-magic-sparkles"></i>AI-generated</span></div><div class="ph-card-body">${body}</div></div>`;
+}
+});
+
+// Wrap the detail cards in the 2-column grid
+if (gridCards) outputString += `<div class="ph-card-grid">${gridCards}</div>`;
+
+// US vs UK/EU side-by-side label comparison (when both labels are available)
+if (parsedResult.canCompare && parsedResult.labels) {
+const diffs = parsedResult.summary && parsedResult.summary.differences;
+outputString += buildCompare(parsedResult.labels, diffs);
+}
+
+outputText.innerHTML = outputString;
+outputText.classList.remove('hidden');
+actionButtons.classList.remove('hidden');
+newSearchButton.classList.remove('hidden');
+outputText.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+})
+.catch(() => {
+outputText.innerHTML = `<div class="drug-name-result" style="border-left-color:#c45d3e;background-color:#fdf0ec;"><i class="fa-solid fa-exclamation-circle" style="color:#c45d3e;"></i> <span>An error occurred. <button onclick="document.getElementById('convertButton').click()" style="background:none;border:none;color:var(--teal);text-decoration:underline;cursor:pointer;padding:0;font-family:'Inter',sans-serif;font-size:inherit;">Try again</button></span></div>`;
+outputText.classList.remove('hidden');
+})
+.finally(() => {
+buttonText.textContent = 'Convert';
+buttonSpinner.classList.add('hidden');
+convertButton.disabled = false;
+});
+}
+
+convertButton.addEventListener('click', handleConversion);
+});
+</script>
