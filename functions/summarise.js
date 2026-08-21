@@ -5,6 +5,8 @@
  *   - glance: short plain-English summaries of uses / dosage / side effects /
  *             warnings (restores the simplicity of the original tool)
  *   - differences: the key clinically-relevant US-vs-UK label differences
+ *   - verdicts: per-topic same/differs flag (US vs UK)
+ *   - indicationGap: indications approved US-only / UK-only / in both
  *
  * The model is instructed to summarise ONLY from the supplied label text and
  * add nothing — this is grounded summarisation, not fact generation. The full
@@ -62,9 +64,11 @@ Return a JSON object with this shape:
     "sideEffects": "<=25 words: the most common side effects",
     "warnings": "<=30 words: the most important safety warnings"
   }${both ? `,
-  "differences": ["up to 3 short bullets naming the most clinically relevant differences between the US and UK labels"]` : ""}
+  "differences": ["up to 4 short bullets naming the most clinically relevant US-vs-UK label differences"],
+  "indicationGap": { "usOnly": ["indications in the US label but not the UK SmPC"], "ukOnly": ["indications in the UK SmPC but not the US label"], "shared": ["indications approved in both"] },
+  "verdicts": { "indications": "same|differs", "dosage": "same|differs", "contraindications": "same|differs", "warnings": "same|differs", "adverse": "same|differs" }` : ""}
 }
-Prefer the US label for the 'glance' fields when both are present.${both ? " The 'differences' must contrast the two labels." : ""}`;
+Prefer the US label for the 'glance' fields when both are present.${both ? " 'differences' must contrast the two labels. For 'verdicts', mark a topic \"same\" when the two labels are materially equivalent (even if worded differently) and \"differs\" otherwise — only include topics where BOTH labels have text. Derive 'indicationGap' from the indications text of each label." : ""}`;
 }
 
 /**
@@ -103,8 +107,17 @@ async function summariseLabels(parsed, apiKey) {
     const summary = {};
     if (parsedOut.glance && typeof parsedOut.glance === "object") summary.glance = parsedOut.glance;
     if (Array.isArray(parsedOut.differences) && parsedOut.differences.length) {
-      summary.differences = parsedOut.differences.slice(0, 4).map(String);
+      summary.differences = parsedOut.differences.slice(0, 5).map(String);
     }
+    if (parsedOut.indicationGap && typeof parsedOut.indicationGap === "object") {
+      const g = parsedOut.indicationGap;
+      summary.indicationGap = {
+        usOnly: Array.isArray(g.usOnly) ? g.usOnly.map(String) : [],
+        ukOnly: Array.isArray(g.ukOnly) ? g.ukOnly.map(String) : [],
+        shared: Array.isArray(g.shared) ? g.shared.map(String) : [],
+      };
+    }
+    if (parsedOut.verdicts && typeof parsedOut.verdicts === "object") summary.verdicts = parsedOut.verdicts;
     return summary.glance || summary.differences ? summary : null;
   } catch (e) {
     console.warn(`Summary generation failed: ${e.message}`);

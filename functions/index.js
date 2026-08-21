@@ -1,9 +1,46 @@
 const functions = require("firebase-functions");
 const { defineSecret } = require("firebase-functions/params");
-const cors = require("cors")({ origin: true }); // Allow CORS for all origins
 const fetch = require("node-fetch");
-const { getLabels } = require("./labels");
-const { resolveName } = require("./resolveName");
+
+// === Abuse protection ===
+// Only these origins may call the public endpoint from a browser. Add any
+// domain that hosts pharmonym.html here.
+const ALLOWED_ORIGINS = [
+  "https://pharmatools.ai",
+  "https://www.pharmatools.ai",
+  "http://localhost:5000",
+  "http://127.0.0.1:5000",
+];
+const cors = require("cors")({
+  origin: (origin, cb) => {
+    // Same-origin / non-browser requests have no Origin header; they are
+    // still subject to the input validation + rate limit below.
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    return cb(new Error("Origin not allowed"), false);
+  },
+  methods: ["POST", "OPTIONS"],
+});
+
+// Drug names are short and use a small character set. Anything else is
+// rejected before it can reach OpenAI.
+const MAX_NAME_LENGTH = 60;
+const NAME_PATTERN = /^[a-z0-9][a-z0-9 .,'()/+-]*$/i;
+function isPlausibleDrugName(name) {
+  return (
+    typeof name === "string" &&
+    name.trim().length >= 2 &&
+    name.trim().length <= MAX_NAME_LENGTH &&
+    NAME_PATTERN.test(name.trim())
+  );
+}
+
+// Per-IP rate limit, tracked in Firestore so it works across instances.
+// Only counts requests that get past the cache (i.e. could cost money).
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT_MAX = 30; // uncached requests per IP per window
+const MAX_INSTANCES = 3; // caps how far a flood can fan out
+// Name resolution + official labels now come from the shared engine.
+const { getLabels, resolveName } = require("@pharmatools/drug-data");
 const { summariseLabels } = require("./summarise");
 
 // Secrets (Cloud Secret Manager) — replaces the deprecated functions.config().
@@ -18,10 +55,61 @@ admin.initializeApp();
 // Initialize Firestore
 const db = admin.firestore();
 const drugsCollection = db.collection('drugs');
+const rateLimitCollection = db.collection('rateLimits');
+
+function clientIp(req) {
+  const fwd = req.headers["x-forwarded-for"];
+  const ip = (typeof fwd === "string" && fwd.split(",")[0].trim()) || req.ip || "unknown";
+  return ip.replace(/[^a-zA-Z0-9.:]/g, "_");
+}
+
+/**
+ * Returns true if this IP is still within its hourly budget of uncached
+ * requests, and records the hit. Fails open on Firestore errors so a
+ * Firestore blip never takes the service down.
+ */
+async function checkRateLimit(ip) {
+  try {
+    const ref = rateLimitCollection.doc(ip);
+    return await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const now = Date.now();
+      let { count = 0, windowStart = now } = snap.exists ? snap.data() : {};
+      if (now - windowStart > RATE_LIMIT_WINDOW_MS) {
+        count = 0;
+        windowStart = now;
+      }
+      if (count >= RATE_LIMIT_MAX) return false;
+      tx.set(ref, { count: count + 1, windowStart, updatedAt: new Date() });
+      return true;
+    });
+  } catch (err) {
+    console.error("Rate limit check error:", err);
+    return true;
+  }
+}
 
 // Cache settings
-const CACHE_EXPIRY_DAYS = 30; // How long to keep cached responses
+const CACHE_EXPIRY_DAYS = 30; // Successful, label-bearing results
+const EMPTY_CACHE_EXPIRY_DAYS = 1; // Results with no label data: re-validate
+// soon so a transient upstream (openFDA/eMC) failure doesn't stick for 30 days.
 const shouldUseCache = true; // Enable/disable cache (for testing)
+
+/**
+ * Whether a cached/produced response actually carries official label data.
+ * Label-less results get a short TTL so transient label-fetch failures self-heal.
+ */
+function responseHasLabels(data) {
+  try {
+    const content =
+      data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if (typeof content !== "string") return false;
+    const parsed = JSON.parse(content);
+    return Boolean(parsed && parsed.labels && (parsed.labels.us || parsed.labels.uk));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Mutates the OpenAI response object in place: parses the JSON the model
@@ -48,13 +136,27 @@ async function enrichWithLabels(data) {
 
   // Best query term for label lookup: the generic (international
   // non-proprietary) name is how labels are indexed.
-  const queryTerm =
-    parsed.genericName ||
-    (parsed.inputType === "generic" ? parsed.inputName : null) ||
-    parsed.inputName;
-  if (!queryTerm) return;
+  //
+  // NOTE: resolveName() can return a multi-ingredient COMBINATION (e.g.
+  // "Atorvastatin / Ezetimibe") for a single-ingredient generic, because the
+  // RxNorm resolver prefers MIN (multiple-ingredient) concepts. A combination
+  // string has no single-drug FDA/UK label and 404s, yielding empty labels.
+  // So: prefer a clean single-ingredient term, and if the first lookup finds
+  // nothing, retry with the raw input name.
+  const looksCombo = (s) => typeof s === "string" && s.includes("/");
+  const primaryTerm =
+    (parsed.genericName && !looksCombo(parsed.genericName) ? parsed.genericName : null) ||
+    parsed.inputName ||
+    parsed.genericName;
+  if (!primaryTerm) return;
 
-  const labels = await getLabels(queryTerm);
+  let labels = await getLabels(primaryTerm);
+  if (!labels.us && !labels.uk) {
+    const altTerm = [parsed.inputName, parsed.genericName].find(
+      (t) => t && t !== primaryTerm && !looksCombo(t)
+    );
+    if (altTerm) labels = await getLabels(altTerm);
+  }
   parsed.labels = labels;
   // Both regional labels present -> US-vs-UK side-by-side comparison is possible.
   parsed.canCompare = Boolean(labels.us && labels.uk);
@@ -192,15 +294,24 @@ async function callOpenAi(name) {
 }
 
 exports.convertDrugName = functions
-  .runWith({ secrets: [OPENAI_KEY] })
+  .runWith({ secrets: [OPENAI_KEY], maxInstances: MAX_INSTANCES })
   .https.onRequest((req, res) => {
-  cors(req, res, async () => {
-    const name = req.body.name;
+  cors(req, res, async (corsErr) => {
+    if (corsErr) {
+      return res.status(403).json({ error: "Origin not allowed" });
+    }
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
+    const name = req.body && req.body.name;
 
     if (!name) {
       return res.status(400).json({ error: "Drug name is required" });
     }
-    
+    if (!isPlausibleDrugName(name)) {
+      return res.status(400).json({ error: "Invalid drug name" });
+    }
+
     // Normalize drug name for consistent caching (lowercase, trim whitespace)
     const normalizedName = name.trim().toLowerCase();
     
@@ -221,11 +332,15 @@ exports.convertDrugName = functions
         if (snapshot.exists) {
           const cachedData = snapshot.data();
           const createdAt = cachedData.createdAt.toDate();
-          
-          // Calculate if cache is still valid
+
+          // Label-bearing results are stable (30 days); label-less results expire
+          // quickly so transient upstream failures don't poison popular drugs.
+          const ttlDays = responseHasLabels(cachedData.response)
+            ? CACHE_EXPIRY_DAYS
+            : EMPTY_CACHE_EXPIRY_DAYS;
           const expiryDate = new Date(createdAt);
-          expiryDate.setDate(expiryDate.getDate() + CACHE_EXPIRY_DAYS);
-          
+          expiryDate.setDate(expiryDate.getDate() + ttlDays);
+
           if (expiryDate > now) {
             console.log(`Cache hit for: ${normalizedName}`);
             return res.json(cachedData.response);
@@ -239,6 +354,14 @@ exports.convertDrugName = functions
         // Log cache errors but continue to API request
         console.error("Cache retrieval error:", cacheError);
       }
+    }
+
+    // Cache miss: this request can cost money, so enforce the per-IP limit.
+    const ip = clientIp(req);
+    if (!(await checkRateLimit(ip))) {
+      console.warn(`Rate limit exceeded for ${ip}`);
+      res.set("Retry-After", "3600");
+      return res.status(429).json({ error: "Too many requests. Please try again later." });
     }
 
     // Produce the conversion (deterministic first, OpenAI fallback).

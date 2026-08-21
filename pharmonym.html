@@ -443,9 +443,46 @@ font-size: 0.85rem;
 font-weight: 600;
 color: var(--ink);
 }
+.ph-cmp-export {
+margin-left: auto;
+display: inline-flex;
+align-items: center;
+gap: 0.4rem;
+background: #fff;
+border: 1px solid var(--teal);
+color: var(--teal);
+font-family: 'Inter', sans-serif !important;
+font-size: 0.72rem;
+font-weight: 600;
+padding: 0.32rem 0.7rem;
+border-radius: 5px;
+cursor: pointer;
+transition: background 0.15s, color 0.15s;
+}
+.ph-cmp-export:hover { background: var(--teal); color: #fff; }
 .ph-diff { padding: 0 1.1rem 0.4rem; }
 .ph-diff-list { margin: 0.3rem 0 0; padding-left: 1.1rem; }
 .ph-diff-list li { font-size: 0.85rem; line-height: 1.55; color: var(--ink); margin-bottom: 0.3rem; }
+
+/* Per-topic comparison tags */
+.ph-cmp-tag { font-family: 'Fira Code', monospace !important; font-size: 0.58rem; font-weight: 400; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.1rem 0.45rem; border-radius: 2px; margin-left: 0.5rem; vertical-align: middle; }
+.ph-cmp-tag.same { background: var(--teal-light); color: var(--teal); }
+.ph-cmp-tag.differs { background: #fdf0ec; color: var(--warm); }
+.ph-cmp-tag.us-only { background: #eaf0fb; color: #1a3a6b; }
+.ph-cmp-tag.uk-only { background: var(--teal-light); color: var(--teal); }
+
+/* Indication-gap callout */
+.ph-indgap { padding: 0 1.1rem 0.5rem; }
+.ph-indgap-title { font-family: 'Fira Code', monospace !important; font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); margin: 0.2rem 0 0.5rem; }
+.ph-indgap-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.ph-indgap-col { background: var(--off-white); border-radius: 4px; padding: 0.6rem 0.85rem; border-top: 2px solid var(--rule); }
+.ph-indgap-col.us { border-top-color: #1a3a6b; }
+.ph-indgap-col.uk { border-top-color: var(--teal); }
+.ph-indgap-col .h { font-family: 'Fira Code', monospace !important; font-size: 0.62rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem; }
+.ph-indgap-col ul { margin: 0; padding-left: 1rem; }
+.ph-indgap-col li { font-size: 0.82rem; color: var(--ink); line-height: 1.5; margin-bottom: 0.2rem; }
+@media (max-width: 640px) { .ph-indgap-cols { grid-template-columns: 1fr; } }
+
 .ph-compare-details { padding: 0 1.1rem 1.1rem; }
 .ph-compare-details > summary {
 cursor: pointer;
@@ -619,6 +656,14 @@ line-height: 1.5;
 padding-top: 1.5rem;
 border-top: 1px solid var(--rule);
 }
+.ph-credit {
+margin-top: 1rem;
+font-size: 0.82rem;
+color: var(--muted);
+text-align: center;
+line-height: 1.55;
+}
+.ph-credit a { color: var(--teal); font-weight: 500; }
 
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
@@ -709,6 +754,8 @@ gap: 0.4rem;
 
 <!-- Footnote -->
 <p class="ph-footnote">"At a glance" summaries are AI-generated from official prescribing information (FDA / UK SmPC) and condense the full label text shown beneath each card, with source links. Not a substitute for professional medical advice. Always verify with the full prescribing information or your pharmacist.</p>
+
+<p class="ph-credit">Pharmonym runs on the same open-source engine as <a href="https://www.pharmatools.ai/pubcrawl">PubCrawl</a> — our MCP server that connects AI to biomedical literature, drug labels, and clinical-trial data.</p>
 
 </div>
 </div>
@@ -932,9 +979,13 @@ return (stop > n * 0.5 ? cut.slice(0, stop + 1) : cut).trim() + ' …';
 
 // Side-by-side US (FDA) vs UK/EU (SmPC) comparison across mapped topics,
 // led by an AI summary of the key differences.
-function buildCompare(labels, differences) {
+function buildCompare(labels, summary) {
 const us = labels.us, uk = labels.uk;
 if (!us || !uk) return '';
+const differences = (summary && summary.differences) || [];
+const verdicts = (summary && summary.verdicts) || {};
+const indicationGap = summary && summary.indicationGap;
+
 const topics = [
 ['Indications', 'indications'],
 ['Dosing', 'dosage'],
@@ -942,30 +993,55 @@ const topics = [
 ['Warnings & Precautions', 'warnings'],
 ['Adverse Reactions', 'adverse']
 ];
+
+function topicTag(field, u, k) {
+if (u && k) {
+return String(verdicts[field] || '').toLowerCase() === 'same'
+? '<span class="ph-cmp-tag same">Same</span>'
+: '<span class="ph-cmp-tag differs">Differs</span>';
+}
+if (u) return '<span class="ph-cmp-tag us-only">US only</span>';
+if (k) return '<span class="ph-cmp-tag uk-only">UK/EU only</span>';
+return '';
+}
+
 let rows = '';
 topics.forEach(([label, field]) => {
 const u = us[field], k = uk[field];
 if (!u && !k) return;
 const cell = (cls, flag, text) =>
 `<div class="ph-compare-cell ${cls}${text ? '' : ' empty'}"><span class="ph-cell-flag">${flag}</span>${text ? escapeHtml(compareTruncate(text, 520)) : 'Not stated in this label'}</div>`;
-rows += `<div class="ph-compare-topic">${label}</div><div class="ph-compare-row">`
+rows += `<div class="ph-compare-topic">${label}${topicTag(field, u, k)}</div><div class="ph-compare-row">`
 + cell('us', 'US · FDA', u)
 + cell('uk', 'UK/EU · SmPC', k)
 + `</div>`;
 });
 if (!rows) return '';
+
 const srcHead = (flagStyle, flag, lbl) =>
 `<div class="ph-compare-srchead"><span class="ph-region-flag" style="${flagStyle}">${flag}</span>${escapeHtml(lbl.authority)}<a href="${escapeHtml(lbl.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(lbl.sourceLabel)}${lbl.updated ? ' &middot; ' + escapeHtml(lbl.updated) : ''}</a></div>`;
 const srcs = `<div class="ph-compare-srcs">`
 + srcHead('background:#1a3a6b;', 'US', us)
 + srcHead('', 'UK/EU', uk)
 + `</div>`;
+
 let diffHtml = '';
-if (differences && differences.length) {
+if (differences.length) {
 diffHtml = `<div class="ph-diff"><ul class="ph-diff-list">${differences.map(d => `<li>${escapeHtml(d)}</li>`).join('')}</ul></div>`;
 }
-const head = `<div class="ph-compare-head"><i class="fa-solid fa-right-left"></i> US vs UK / EU labelling${differences && differences.length ? ' <span class="ph-source-badge ai-sum"><i class="fa-solid fa-feather"></i>AI summary</span>' : ''}</div>`;
-return `<div class="ph-compare">${head}${diffHtml}<details class="ph-compare-details"><summary>Show full side-by-side comparison</summary>${srcs}${rows}</details></div>`;
+
+let gapHtml = '';
+if (indicationGap && ((indicationGap.usOnly && indicationGap.usOnly.length) || (indicationGap.ukOnly && indicationGap.ukOnly.length))) {
+const col = (cls, h, items) =>
+`<div class="ph-indgap-col ${cls}"><div class="h">${h}</div>${items && items.length ? '<ul>' + items.map(i => `<li>${escapeHtml(i)}</li>`).join('') + '</ul>' : '<div style="font-size:0.8rem;color:var(--muted)">None</div>'}</div>`;
+gapHtml = `<div class="ph-indgap"><div class="ph-indgap-title">Indication differences</div><div class="ph-indgap-cols">`
++ col('us', 'Approved in US only', indicationGap.usOnly)
++ col('uk', 'Approved in UK/EU only', indicationGap.ukOnly)
++ `</div></div>`;
+}
+
+const head = `<div class="ph-compare-head"><i class="fa-solid fa-right-left"></i> US vs UK / EU labelling${differences.length ? ' <span class="ph-source-badge ai-sum"><i class="fa-solid fa-feather"></i>AI summary</span>' : ''}<button type="button" class="ph-cmp-export" onclick="phExportCompare()"><i class="fa-solid fa-file-word"></i> Download report</button></div>`;
+return `<div class="ph-compare">${head}${diffHtml}${gapHtml}<details class="ph-compare-details"><summary>Show full side-by-side comparison</summary>${srcs}${rows}</details></div>`;
 }
 
 function searchDrugs(query) {
@@ -1086,10 +1162,30 @@ outputText.classList.remove('hidden'); hideEmptyState(); return;
 buttonText.textContent = 'Converting...';
 buttonSpinner.classList.remove('hidden');
 convertButton.disabled = true;
+let loadingTimer = null;
 actionButtons.classList.add('hidden');
 hideEmptyState();
 quickTrySection.classList.add('dimmed');
-outputText.innerHTML = `<div style="font-family:'Fira Code',monospace;font-size:0.75rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1rem;">Looking up ${inputName}…</div>` + generateSkeletonLoading();
+// Staged loading messages — roughly track the backend pipeline so the cold-path
+// wait (first lookup of a drug) feels purposeful. Cached lookups return before
+// the first tick, so the messages only ever show on a genuine fetch.
+const loadingMessages = [
+`Looking up ${escapeHtml(inputName)}…`,
+'Resolving the drug name…',
+'Fetching the FDA label…',
+'Fetching the UK SmPC…',
+'Summarising the prescribing information…',
+'Comparing US vs UK labelling…',
+'Almost there…'
+];
+let loadMsgIdx = 0;
+outputText.innerHTML = `<div id="phLoadMsg" style="font-family:'Fira Code',monospace;font-size:0.75rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1rem;">${loadingMessages[0]}</div>` + generateSkeletonLoading();
+loadingTimer = setInterval(() => {
+loadMsgIdx = Math.min(loadMsgIdx + 1, loadingMessages.length - 1);
+const el = document.getElementById('phLoadMsg');
+if (el) el.textContent = loadingMessages[loadMsgIdx];
+if (loadMsgIdx === loadingMessages.length - 1) { clearInterval(loadingTimer); loadingTimer = null; }
+}, 2200);
 outputText.classList.remove('hidden');
 newSearchButton.classList.add('hidden');
 
@@ -1215,8 +1311,15 @@ if (gridCards) outputString += `<div class="ph-card-grid">${gridCards}</div>`;
 
 // US vs UK/EU side-by-side label comparison (when both labels are available)
 if (parsedResult.canCompare && parsedResult.labels) {
-const diffs = parsedResult.summary && parsedResult.summary.differences;
-outputString += buildCompare(parsedResult.labels, diffs);
+outputString += buildCompare(parsedResult.labels, parsedResult.summary);
+window.__phCompare = {
+inputName: parsedResult.inputName || '',
+genericName: parsedResult.genericName || '',
+labels: parsedResult.labels,
+summary: parsedResult.summary || null
+};
+} else {
+window.__phCompare = null;
 }
 
 outputText.innerHTML = outputString;
@@ -1230,6 +1333,7 @@ outputText.innerHTML = `<div class="drug-name-result" style="border-left-color:#
 outputText.classList.remove('hidden');
 })
 .finally(() => {
+if (loadingTimer) { clearInterval(loadingTimer); loadingTimer = null; }
 buttonText.textContent = 'Convert';
 buttonSpinner.classList.add('hidden');
 convertButton.disabled = false;
@@ -1238,4 +1342,96 @@ convertButton.disabled = false;
 
 convertButton.addEventListener('click', handleConversion);
 });
+
+// US vs UK/EU comparison report export (Word .doc, opens/prints to PDF)
+function phExportCompare() {
+const d = window.__phCompare;
+if (!d || !d.labels || !d.labels.us || !d.labels.uk) return;
+const esc = s => String(s == null ? '' : s)
+.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+.replace(/"/g, '&quot;');
+const us = d.labels.us, uk = d.labels.uk;
+const summary = d.summary || {};
+const verdicts = summary.verdicts || {};
+const gap = summary.indicationGap || null;
+const title = d.genericName && d.genericName.toLowerCase() !== (d.inputName || '').toLowerCase()
+? `${d.inputName} (${d.genericName})` : (d.inputName || d.genericName || 'Drug');
+const today = new Date().toISOString().slice(0, 10);
+
+const topics = [
+['Indications', 'indications'],
+['Dosing', 'dosage'],
+['Contraindications', 'contraindications'],
+['Warnings & Precautions', 'warnings'],
+['Adverse Reactions', 'adverse']
+];
+function statusLabel(field, u, k) {
+if (u && k) return String(verdicts[field] || '').toLowerCase() === 'same' ? 'Same' : 'Differs';
+if (u) return 'US only';
+if (k) return 'UK/EU only';
+return '—';
+}
+
+let diffBlock = '';
+if (Array.isArray(summary.differences) && summary.differences.length) {
+diffBlock = `<h2>Key differences <span class="ai">(AI summary of the official labels)</span></h2><ul>${summary.differences.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+}
+let gapBlock = '';
+if (gap && ((gap.usOnly && gap.usOnly.length) || (gap.ukOnly && gap.ukOnly.length))) {
+const list = items => items && items.length ? `<ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '<p style="color:#777">None</p>';
+gapBlock = `<h2>Indication differences</h2>
+<table class="gap"><tr><th>Approved in US only</th><th>Approved in UK/EU only</th></tr>
+<tr><td>${list(gap.usOnly)}</td><td>${list(gap.ukOnly)}</td></tr></table>`;
+}
+
+let rows = '';
+topics.forEach(([label, field]) => {
+const u = us[field], k = uk[field];
+if (!u && !k) return;
+rows += `<tr><td class="topic">${esc(label)}<br><span class="tag">${esc(statusLabel(field, u, k))}</span></td>`
++ `<td>${u ? esc(u) : '<em>Not stated in this label</em>'}</td>`
++ `<td>${k ? esc(k) : '<em>Not stated in this label</em>'}</td></tr>`;
+});
+
+const usSrc = `${esc(us.authority || 'FDA')} — ${esc(us.sourceLabel || 'US Prescribing Information')}${us.updated ? ' (' + esc(us.updated) + ')' : ''}`;
+const ukSrc = `${esc(uk.authority || 'MHRA/EMA')} — ${esc(uk.sourceLabel || 'UK SmPC')}${uk.updated ? ' (' + esc(uk.updated) + ')' : ''}`;
+
+const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${esc(title)} — US vs UK/EU labelling</title>
+<style>
+body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a1a1a; }
+h1 { font-size: 18pt; margin: 0 0 4px; }
+h2 { font-size: 13pt; margin: 18px 0 6px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
+.sub { color: #555; font-size: 10pt; margin: 0 0 12px; }
+.ai { font-weight: normal; font-size: 9pt; color: #777; }
+table { border-collapse: collapse; width: 100%; margin: 6px 0; }
+th, td { border: 1px solid #bbb; padding: 6px 8px; text-align: left; vertical-align: top; font-size: 10pt; }
+th { background: #f0f2f5; }
+table.cmp td.topic { width: 18%; font-weight: bold; }
+table.cmp th:nth-child(2), table.cmp th:nth-child(3) { width: 41%; }
+table.gap th, table.gap td { width: 50%; }
+.tag { display: inline-block; font-weight: normal; font-size: 8pt; color: #555; }
+.sources { font-size: 9pt; color: #555; margin-top: 8px; }
+.disc { font-size: 8.5pt; color: #777; margin-top: 18px; border-top: 1px solid #ccc; padding-top: 8px; }
+</style></head><body>
+<h1>${esc(title)}</h1>
+<p class="sub">US (FDA) vs UK/EU (SmPC) prescribing-information comparison &middot; Generated ${today} via Pharmonym (pharmatools.ai)</p>
+${diffBlock}
+${gapBlock}
+<h2>Side-by-side comparison</h2>
+<table class="cmp"><tr><th>Topic</th><th>US — FDA</th><th>UK/EU — SmPC</th></tr>${rows}</table>
+<p class="sources"><strong>Sources.</strong><br>US: ${usSrc}${us.sourceUrl ? ' — ' + esc(us.sourceUrl) : ''}<br>UK/EU: ${ukSrc}${uk.sourceUrl ? ' — ' + esc(uk.sourceUrl) : ''}</p>
+<p class="disc">Compiled from official prescribing information. "Key differences" and same/differs tags are AI-generated summaries of the cited label text and may not capture every nuance — always verify against the full source documents. Not medical advice.</p>
+</body></html>`;
+
+const blob = new Blob([html], { type: 'application/msword' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+const safe = (d.genericName || d.inputName || 'drug').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+a.href = url;
+a.download = `${safe}-us-vs-uk-labelling-${today}.doc`;
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
 </script>
