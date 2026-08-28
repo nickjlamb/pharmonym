@@ -54,8 +54,8 @@ admin.initializeApp();
 
 // Initialize Firestore
 const db = admin.firestore();
-const drugsCollection = db.collection('drugs');
-const rateLimitCollection = db.collection('rateLimits');
+const drugsCollection = db.collection("drugs");
+const rateLimitCollection = db.collection("rateLimits");
 
 function clientIp(req) {
   const fwd = req.headers["x-forwarded-for"];
@@ -153,7 +153,7 @@ async function enrichWithLabels(data) {
   let labels = await getLabels(primaryTerm);
   if (!labels.us && !labels.uk) {
     const altTerm = [parsed.inputName, parsed.genericName].find(
-      (t) => t && t !== primaryTerm && !looksCombo(t)
+      (t) => t && t !== primaryTerm && !looksCombo(t),
     );
     if (altTerm) labels = await getLabels(altTerm);
   }
@@ -314,20 +314,20 @@ exports.convertDrugName = functions
 
     // Normalize drug name for consistent caching (lowercase, trim whitespace)
     const normalizedName = name.trim().toLowerCase();
-    
+
     // Check cache first if enabled
     if (shouldUseCache) {
       try {
         // Get current time for cache expiration check
         const now = new Date();
-        
+
         // Create a unique document ID based on the normalized drug name
-        const drugDocId = normalizedName.replace(/[^a-z0-9]/g, '');
+        const drugDocId = normalizedName.replace(/[^a-z0-9]/g, "");
         const drugDoc = drugsCollection.doc(drugDocId);
-        
+
         // Try to get the document from Firestore
         const snapshot = await drugDoc.get();
-        
+
         // If document exists and is not expired, return cached result
         if (snapshot.exists) {
           const cachedData = snapshot.data();
@@ -391,7 +391,7 @@ exports.convertDrugName = functions
     // Store the result in cache if caching is enabled
     if (shouldUseCache) {
       try {
-        const drugDocId = normalizedName.replace(/[^a-z0-9]/g, '');
+        const drugDocId = normalizedName.replace(/[^a-z0-9]/g, "");
         await drugsCollection.doc(drugDocId).set({
           query: normalizedName,
           response: data,
@@ -408,37 +408,37 @@ exports.convertDrugName = functions
 });
 
 // Function to clean up expired cache entries (runs daily)
-exports.cleanupExpiredCache = functions.pubsub.schedule('every 24 hours').onRun(async (context) => {
+exports.cleanupExpiredCache = functions.pubsub.schedule("every 24 hours").onRun(async (context) => {
   try {
-    console.log('Running cache cleanup job');
-    
+    console.log("Running cache cleanup job");
+
     // Calculate the cutoff date for expired cache entries
     const now = new Date();
     const cutoffDate = new Date(now);
     cutoffDate.setDate(cutoffDate.getDate() - CACHE_EXPIRY_DAYS);
-    
+
     // Query for documents older than the cutoff date
     const expiredDocs = await drugsCollection
-      .where('createdAt', '<', cutoffDate)
+      .where("createdAt", "<", cutoffDate)
       .get();
-    
+
     // If no expired documents, we're done
     if (expiredDocs.empty) {
-      console.log('No expired cache entries found');
+      console.log("No expired cache entries found");
       return null;
     }
-    
+
     // Delete expired documents in batch
     const batch = db.batch();
-    expiredDocs.forEach(doc => {
+    expiredDocs.forEach((doc) => {
       batch.delete(doc.ref);
     });
-    
+
     await batch.commit();
     console.log(`Deleted ${expiredDocs.size} expired cache entries`);
     return null;
   } catch (error) {
-    console.error('Error cleaning up cache:', error);
+    console.error("Error cleaning up cache:", error);
     return null;
   }
 });
@@ -454,56 +454,56 @@ exports.clearCache = functions
     if (apiKey !== `Bearer ${ADMIN_KEY.value()}`) {
       return res.status(403).json({ error: "Unauthorized" });
     }
-    
+
     try {
       const { drugName } = req.body;
-      
+
       // If drugName provided, clear only that entry
       if (drugName) {
         const normalizedName = drugName.trim().toLowerCase();
-        const drugDocId = normalizedName.replace(/[^a-z0-9]/g, '');
+        const drugDocId = normalizedName.replace(/[^a-z0-9]/g, "");
         const drugDoc = drugsCollection.doc(drugDocId);
-        
+
         const doc = await drugDoc.get();
         if (doc.exists) {
           await drugDoc.delete();
-          return res.json({ 
-            success: true, 
-            message: `Cache cleared for ${drugName}` 
+          return res.json({
+            success: true,
+            message: `Cache cleared for ${drugName}`,
           });
         } else {
-          return res.json({ 
-            success: false, 
-            message: `No cache entry found for ${drugName}` 
+          return res.json({
+            success: false,
+            message: `No cache entry found for ${drugName}`,
           });
         }
       }
-      
+
       // If no drugName provided, clear entire cache (with limit for safety)
       const batchSize = 100; // Maximum batch size for Firestore
       const snapshot = await drugsCollection.limit(batchSize).get();
-      
+
       if (snapshot.empty) {
         return res.json({ success: true, message: "Cache is already empty" });
       }
-      
+
       // Delete in batch for better performance
       const batch = db.batch();
       snapshot.docs.forEach((doc) => {
         batch.delete(doc.ref);
       });
-      
+
       await batch.commit();
-      
-      return res.json({ 
-        success: true, 
-        message: `Cleared ${snapshot.size} cache entries` 
+
+      return res.json({
+        success: true,
+        message: `Cleared ${snapshot.size} cache entries`,
       });
     } catch (error) {
       console.error("Error clearing cache:", error);
-      return res.status(500).json({ 
-        error: "Failed to clear cache", 
-        details: error.message 
+      return res.status(500).json({
+        error: "Failed to clear cache",
+        details: error.message,
       });
     }
   });
