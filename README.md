@@ -1,69 +1,209 @@
-# Pharmonym
+<div align="center">
 
-Brand ⇄ generic drug-name converter, with uses, dosage, side effects and
-warnings sourced from official prescribing information, plain-English AI
-summaries, and a side-by-side US vs UK/EU label comparison.
+# 💊 Pharmonym
 
-Part of [PharmaTools.AI](https://www.pharmatools.ai). Live at
-[pharmatools.ai/pharmonym](https://www.pharmatools.ai/pharmonym).
+**Brand ⇄ generic drug-name converter — dosage, warnings and side effects from
+official FDA & UK labels, AI-summarised, with a side-by-side US vs UK comparison.**
 
-## How it works
+[![CI](https://github.com/nickjlamb/pharmonym/actions/workflows/ci.yml/badge.svg)](https://github.com/nickjlamb/pharmonym/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-22-brightgreen.svg)](functions/package.json)
+[![Engine: @pharmatools/drug-data](https://img.shields.io/npm/v/%40pharmatools%2Fdrug-data?label=%40pharmatools%2Fdrug-data)](https://www.npmjs.com/package/@pharmatools/drug-data)
+[![Live demo](https://img.shields.io/badge/demo-pharmatools.ai%2Fpharmonym-0b7285)](https://www.pharmatools.ai/pharmonym)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-The tool favours authoritative, deterministic data and uses AI only to
-summarise that data — never to generate clinical facts.
+[**Live demo**](https://www.pharmatools.ai/pharmonym) · [Quick start](#-quick-start) · [API](#-api) · [Architecture](#%EF%B8%8F-architecture) · [Roadmap](#%EF%B8%8F-roadmap) · [Contributing](#-contributing)
 
-1. **Name resolution** (`functions/resolveName.js`) — brand⇄generic conversion,
-   drug class and indications via **RxNorm/RxNav**, with **openFDA** as a
-   fallback. No AI; no hallucinated names.
-2. **Label data** (`functions/labels.js`) — dosage, warnings, contraindications,
-   indications and adverse reactions pulled from the **US FDA label** (openFDA,
-   cited to DailyMed) and the **UK/EU SmPC** (eMC / medicines.org.uk).
-3. **Grounded summaries** (`functions/summarise.js`) — one model call condenses
-   the official label text into "at a glance" lines and a list of key US-vs-UK
-   differences. Instructed to summarise only from the supplied text.
-4. **Fallback** — only when neither RxNorm nor openFDA recognises a name does the
-   original OpenAI conversion run (`callOpenAi` in `functions/index.js`), clearly
-   flagged as AI-generated in the UI.
+<img src="assets/pharmonym-screenshot.png" alt="Pharmonym converting Lipitor to Atorvastatin, with drug class and sourced dosage summary" width="720">
 
-Results are cached in Firestore for 30 days.
+</div>
 
-## Project layout
+---
 
-```
-functions/
-  index.js         Cloud Functions entry (convertDrugName, clearCache, cache cleanup)
-  resolveName.js   Deterministic RxNorm/openFDA name resolution
-  labels.js        FDA (openFDA/DailyMed) + UK SmPC (eMC) label fetch & parse
-  summarise.js     Grounded AI summaries (at-a-glance + US/UK differences)
-pharmonym.html        Front-end widget (embedded in Webflow)
-pharmonym-jsonld.html JSON-LD structured data for the page
-firebase.json, .firebaserc
-```
+Drug names are a two-language problem: patients and marketing speak *brand*
+("Lipitor"), while prescribing information, research and pharmacists speak
+*generic* ("atorvastatin"). Pharmonym translates between the two — and brings
+the official label along for the ride.
 
-## Data sources
+The design principle throughout: **authoritative data first, AI only to
+summarise it — never to generate clinical facts.**
 
-- [RxNorm / RxNav](https://rxnav.nlm.nih.gov/) — name mapping, drug class, indications
-- [openFDA](https://open.fda.gov/) — US labels
-- [DailyMed](https://dailymed.nlm.nih.gov/) — US label citations
-- [eMC (medicines.org.uk)](https://www.medicines.org.uk/) — UK/EU SmPC
+## ✨ Features
 
-## Develop & deploy
+- 🔁 **Brand ⇄ generic, both directions** — deterministic resolution via RxNorm/RxNav with an openFDA fallback. No hallucinated drug names.
+- 🏷️ **Official label data** — dosage, warnings, contraindications and side effects from the US FDA label (openFDA, cited to DailyMed) and the UK/EU SmPC (eMC).
+- 🇺🇸🆚🇬🇧 **US vs UK comparison** — side-by-side differences between the two regulatory labels for the same drug.
+- ✨ **Grounded AI summaries** — one model call condenses the official label text into "at a glance" lines; the model is instructed to use *only* the supplied text.
+- 🚦 **Production hardening** — Firestore caching (30 days), per-IP rate limiting, CORS allowlist, bounded scale-out.
+- 📦 **Open engine** — name resolution and label parsing live in [`@pharmatools/drug-data`](https://www.npmjs.com/package/@pharmatools/drug-data), shared with [PubCrawl](https://www.pharmatools.ai/pubcrawl).
+
+## 🚀 Quick start
+
+**Try the hosted API — 10 seconds:**
 
 ```bash
-cd functions
-npm install
-
-# Secrets (Cloud Secret Manager) — required for the OpenAI fallback/summaries
-firebase functions:secrets:set OPENAI_KEY
-firebase functions:secrets:set ADMIN_KEY
-
-firebase deploy --only functions
+curl -X POST https://us-central1-rx-converter.cloudfunctions.net/convertDrugName \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Lipitor"}'
 ```
 
-The front end (`pharmonym.html`) is a self-contained embed; update it in Webflow.
+**Run it locally — under 60 seconds:**
 
-## Disclaimer
+```bash
+git clone https://github.com/nickjlamb/pharmonym.git
+cd pharmonym/functions && npm install
+npx firebase-tools emulators:start --only functions
+```
 
-"At a glance" summaries are AI-generated from official prescribing information
-and are not a substitute for professional medical advice. Always verify against
-the full prescribing information.
+No API keys needed for the deterministic core (name resolution + label fetch).
+To enable the AI summaries and last-resort fallback locally, add your key to
+`functions/.secret.local` (gitignored):
+
+```bash
+echo "OPENAI_KEY=sk-..." >> .secret.local
+```
+
+## 📡 API
+
+### `POST /convertDrugName`
+
+| | |
+|---|---|
+| **Endpoint** | `https://us-central1-rx-converter.cloudfunctions.net/convertDrugName` |
+| **Body** | `{ "name": "<brand or generic drug name>" }` |
+| **Browser calls** | Allowed from the CORS allowlist in `functions/index.js` |
+| **Server-to-server** | Allowed (requests without an `Origin` header) |
+
+The response is an OpenAI-chat-completion-style envelope (a stable contract
+with the widget): parse `choices[0].message.content` as JSON.
+
+```jsonc
+// choices[0].message.content, parsed:
+{
+  "inputName": "Lipitor",
+  "inputType": "brand",
+  "genericName": "Atorvastatin",
+  "drugClass": "Hydroxymethylglutaryl-CoA Reductase Inhibitors",
+  "uses": "To lower cholesterol and reduce cardiovascular risks.",
+  "dosage": "Start with 10 to 20 mg once daily, adjust as needed.",
+  "dosageSourced": true,          // true = from the official label, not AI
+  "warningsSourced": true,
+  "labels": {
+    "us": { "...": "openFDA label sections + DailyMed citation" },
+    "uk": { "...": "eMC SmPC sections + source link" }
+  },
+  "canCompare": true              // both labels found → US-vs-UK comparison
+}
+```
+
+### Errors & limits
+
+| Status | Meaning |
+|---|---|
+| `400` | Missing or implausible drug name |
+| `403` | Browser origin not on the allowlist |
+| `405` | Non-POST method |
+| `429` | Rate limit: **30 uncached requests per IP per hour** (`Retry-After: 3600`) |
+| `500` | Conversion failed |
+
+Cached responses (hits within 30 days for label-bearing results, 1 day for
+label-less ones) don't count against the rate limit.
+
+## 🧪 Examples
+
+**Generic → brand:**
+
+```bash
+curl -X POST https://us-central1-rx-converter.cloudfunctions.net/convertDrugName \
+  -H "Content-Type: application/json" \
+  -d '{"name": "semaglutide"}'
+```
+
+**From JavaScript:**
+
+```js
+const res = await fetch(
+  "https://us-central1-rx-converter.cloudfunctions.net/convertDrugName",
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Humira" }),
+  }
+);
+const envelope = await res.json();
+const drug = JSON.parse(envelope.choices[0].message.content);
+console.log(`${drug.inputName} → ${drug.genericName}`);   // Humira → Adalimumab
+```
+
+**Embed the widget:** `pharmonym.html` is a self-contained embed (currently
+hosted in Webflow at [pharmatools.ai/pharmonym](https://www.pharmatools.ai/pharmonym)) —
+drop it into any page and point it at your own deployment of the function.
+
+## 🏛️ Architecture
+
+```mermaid
+flowchart TB
+    W["🌐 Web widget<br/>pharmonym.html"] -- "POST /convertDrugName" --> F
+
+    subgraph GCP["Firebase / Google Cloud"]
+        F["Cloud Function<br/><b>convertDrugName</b>"] --> C{"Firestore<br/>cache hit?"}
+        C -- "yes" --> R["JSON response"]
+        C -- "no" --> RL{"rate limit OK?<br/>30/IP/hour"}
+        RL -- "no" --> E["429"]
+    end
+
+    RL -- "yes" --> N["resolveName()<br/><i>@pharmatools/drug-data</i>"]
+    N -- "1 · deterministic" --> RX["RxNorm / RxNav"]
+    N -- "2 · fallback" --> OF["openFDA"]
+    N -- "3 · last resort, flagged" --> AI["OpenAI"]
+
+    N --> L["getLabels()"]
+    L --> US["🇺🇸 openFDA label<br/>cited to DailyMed"]
+    L --> UK["🇬🇧 eMC SmPC"]
+    L --> S["Grounded summary<br/><i>summarise.js</i> — only from label text"]
+    S --> DB[("Firestore cache<br/>30d / 1d TTL")]
+    DB --> R
+```
+
+| Path | Role |
+|---|---|
+| `functions/index.js` | Cloud Functions entry: `convertDrugName`, `clearCache` (admin), scheduled cache cleanup, rate limiting, CORS |
+| `functions/resolveName.js` | Name resolution — thin shim over `@pharmatools/drug-data` |
+| `functions/labels.js` | US (openFDA/DailyMed) + UK (eMC SmPC) label fetch — shim over the shared engine |
+| `functions/summarise.js` | Grounded AI summaries: at-a-glance + US/UK differences |
+| `pharmonym.html` | Self-contained front-end widget |
+| `pharmonym-jsonld.html` | JSON-LD structured data for the live page |
+
+### Data sources
+
+| Source | Used for |
+|---|---|
+| [RxNorm / RxNav](https://lhncbc.nlm.nih.gov/RxNav/) | Name mapping, drug class, indications |
+| [openFDA](https://open.fda.gov/) | US label data |
+| [DailyMed](https://dailymed.nlm.nih.gov/) | US label citations |
+| [eMC](https://www.medicines.org.uk/emc) | UK/EU SmPC label data |
+
+## 🗺️ Roadmap
+
+Directional and open to input — [open an issue](https://github.com/nickjlamb/pharmonym/issues) to influence it.
+
+- [ ] Automated test suite (parser fixtures for openFDA + eMC sections)
+- [ ] Additional regulators: EMA and Health Canada labels
+- [ ] Batch conversion endpoint (`names: []`)
+- [ ] More label sections: interactions, pregnancy & lactation
+- [ ] TypeScript migration of the Cloud Functions
+- [ ] Continue consolidating label logic into `@pharmatools/drug-data`
+
+## 🤝 Contributing
+
+PRs and issues welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup,
+style, and the one non-negotiable rule (*AI never generates clinical facts*).
+Releases are documented in the [CHANGELOG](CHANGELOG.md).
+
+## ⚖️ License & disclaimer
+
+[MIT](LICENSE) © Nick Lamb
+
+> "At a glance" summaries are AI-generated from official prescribing
+> information and are **not** a substitute for professional medical advice.
+> Always verify against the full prescribing information or ask a pharmacist.

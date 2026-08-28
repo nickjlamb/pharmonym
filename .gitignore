@@ -79,3 +79,6 @@ functions/.runtimeconfig.json
 
 # dataconnect generated files
 .dataconnect
+
+# Local scratch for files awaiting manual deletion
+_to_delete/
