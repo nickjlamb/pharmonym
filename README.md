@@ -141,29 +141,10 @@ drop it into any page and point it at your own deployment of the function.
 
 ## 🏛️ Architecture
 
-```mermaid
-flowchart TB
-    W["🌐 Web widget<br/>pharmonym.html"] -- "POST /convertDrugName" --> F
-
-    subgraph GCP["Firebase / Google Cloud"]
-        F["Cloud Function<br/><b>convertDrugName</b>"] --> C{"Firestore<br/>cache hit?"}
-        C -- "yes" --> R["JSON response"]
-        C -- "no" --> RL{"rate limit OK?<br/>30/IP/hour"}
-        RL -- "no" --> E["429"]
-    end
-
-    RL -- "yes" --> N["resolveName()<br/><i>@pharmatools/drug-data</i>"]
-    N -- "1 · deterministic" --> RX["RxNorm / RxNav"]
-    N -- "2 · fallback" --> OF["openFDA"]
-    N -- "3 · last resort, flagged" --> AI["OpenAI"]
-
-    N --> L["getLabels()"]
-    L --> US["🇺🇸 openFDA label<br/>cited to DailyMed"]
-    L --> UK["🇬🇧 eMC SmPC"]
-    L --> S["Grounded summary<br/><i>summarise.js</i> — only from label text"]
-    S --> DB[("Firestore cache<br/>30d / 1d TTL")]
-    DB --> R
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/architecture-dark.svg">
+  <img src="docs/architecture-light.svg" alt="Pharmonym architecture: a web widget posts to the convertDrugName Cloud Function, which returns straight from a Firestore cache on a hit and rejects requests over 30 per IP per hour. Name resolution is a cascade — RxNorm/RxNav first, openFDA as a deterministic fallback, and only if both miss is a model asked, with the result flagged. The resolved name fetches the US openFDA label cited to DailyMed and the UK eMC SmPC; a grounded summary condenses only that fetched text before the response is cached and returned. The model never originates a clinical fact." width="100%">
+</picture>
 
 | Path | Role |
 |---|---|

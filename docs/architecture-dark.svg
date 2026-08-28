@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 566" font-family="-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" role="img" aria-label="Pharmonym architecture: a web widget posts to the convertDrugName Cloud Function, which returns straight from a Firestore cache on a hit and rejects requests over 30 per IP per hour. Name resolution is a cascade — RxNorm/RxNav first, openFDA as a deterministic fallback, and only if both miss is a model asked, with the result flagged. The resolved name is used to fetch the US openFDA label cited to DailyMed and the UK eMC SmPC; a grounded summary condenses only that fetched text before the response is cached and returned. The model never originates a clinical fact.">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#767d86"/></marker><marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/></marker><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f85149"/></marker></defs>
+<rect x="16" y="52" width="200" height="452" rx="12" fill="#151b23" stroke="#3d444d"/>
+<text x="34" y="78" font-size="11" fill="#9198a1" font-weight="600">REQUEST</text>
+<rect x="32.0" y="88" width="168" height="48" rx="8" fill="#212830" stroke="#3d444d"/>
+<text x="116" y="110" font-size="13" fill="#e6edf3" font-weight="600" text-anchor="middle">Web widget</text>
+<text x="116" y="128" font-size="11" fill="#9198a1" text-anchor="middle">pharmonym.html</text>
+<polyline points="116,136 116,174" fill="none" stroke="#767d86" stroke-width="1.5" marker-end="url(#a)"/>
+<text x="124" y="160" font-size="10" fill="#9198a1" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace">POST</text>
+<rect x="32.0" y="176" width="168" height="50" rx="8" fill="#212830" stroke="#3d444d"/>
+<text x="116" y="198" font-size="13" fill="#e6edf3" font-weight="600" text-anchor="middle">convertDrugName</text>
+<text x="116" y="216" font-size="11" fill="#9198a1" text-anchor="middle">Cloud Function</text>
+<polyline points="116,226 116,264" fill="none" stroke="#767d86" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="32.0" y="266" width="168" height="52" rx="8" fill="#122117" stroke="#2b5233"/>
+<text x="116" y="288" font-size="13" fill="#3fb950" font-weight="600" text-anchor="middle">Cache check</text>
+<text x="116" y="306" font-size="11" fill="#9198a1" text-anchor="middle">a hit returns here</text>
+<polyline points="116,318 116,352" fill="none" stroke="#767d86" stroke-width="1.5" marker-end="url(#a)"/>
+<text x="124" y="342" font-size="10" fill="#9198a1">miss</text>
+<rect x="32.0" y="354" width="168" height="52" rx="8" fill="#212830" stroke="#3d444d"/>
+<text x="116" y="376" font-size="13" fill="#e6edf3" font-weight="600" text-anchor="middle">Rate limit</text>
+<text x="116" y="394" font-size="11" fill="#9198a1" text-anchor="middle">over 30 / IP / hour &#8594; 429</text>
+<text x="34" y="486" font-size="10.5" fill="#9198a1" font-style="italic">no key, no account</text>
+<polyline points="116,406 116,430 226,430 226,128 275,128" fill="none" stroke="#767d86" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="236" y="52" width="340" height="452" rx="12" fill="#151b23" stroke="#3d444d"/>
+<text x="254" y="78" font-size="11" fill="#9198a1" font-weight="600">NAME RESOLUTION &#183; DETERMINISTIC FIRST</text>
+<rect x="275.0" y="100" width="274" height="54" rx="8" fill="#212830" stroke="#2b5233"/>
+<text x="412" y="122" font-size="13" fill="#e6edf3" font-weight="600" text-anchor="middle">1 &#183; RxNorm / RxNav</text>
+<text x="412" y="140" font-size="11" fill="#9198a1" text-anchor="middle">deterministic mapping</text>
+<rect x="275.0" y="192" width="274" height="54" rx="8" fill="#212830" stroke="#2b5233"/>
+<text x="412" y="214" font-size="13" fill="#e6edf3" font-weight="600" text-anchor="middle">2 &#183; openFDA</text>
+<text x="412" y="232" font-size="11" fill="#9198a1" text-anchor="middle">deterministic fallback</text>
+<rect x="275.0" y="284" width="274" height="54" rx="8" fill="#2a2139" stroke="#ab7df8" stroke-dasharray="5 4"/>
+<text x="412" y="306" font-size="13" fill="#ab7df8" font-weight="600" text-anchor="middle">3 &#183; a model</text>
+<text x="412" y="324" font-size="11" fill="#9198a1" text-anchor="middle">last resort &#8212; result flagged</text>
+<polyline points="412,154 412,190" fill="none" stroke="#767d86" stroke-width="1.5" marker-end="url(#a)"/>
+<text x="422" y="180" font-size="10" fill="#9198a1">no match</text>
+<polyline points="412,246 412,282" fill="none" stroke="#767d86" stroke-width="1.5" marker-end="url(#a)"/>
+<text x="422" y="272" font-size="10" fill="#9198a1">no match</text>
+<text x="412" y="372" font-size="11.5" fill="#e6edf3" font-weight="600" text-anchor="middle">Two deterministic sources are tried</text>
+<text x="412" y="390" font-size="11.5" fill="#e6edf3" font-weight="600" text-anchor="middle">before any model is asked for a name.</text>
+<text x="412" y="414" font-size="10.5" fill="#ab7df8" text-anchor="middle" font-style="italic">&#8212; and when one is, the answer is flagged</text>
+<line x1="549" y1="127" x2="562" y2="127" stroke="#3fb950" stroke-width="1.5"/>
+<line x1="549" y1="219" x2="562" y2="219" stroke="#3fb950" stroke-width="1.5"/>
+<line x1="549" y1="311" x2="562" y2="311" stroke="#3fb950" stroke-width="1.5"/>
+<polyline points="562,311 562,114" fill="none" stroke="#3fb950" stroke-width="1.5"/>
+<polyline points="562,114 594,114" fill="none" stroke="#3fb950" stroke-width="1.5" marker-end="url(#ag)"/>
+<text x="556" y="230" font-size="10" fill="#3fb950" font-weight="600" text-anchor="middle" transform="rotate(-90 556 230)">resolved name</text>
+<rect x="596" y="52" width="388" height="452" rx="12" fill="#151b23" stroke="#3d444d"/>
+<text x="614" y="78" font-size="11" fill="#9198a1" font-weight="600">OFFICIAL LABELS &#183; THEN THE SUMMARY</text>
+<rect x="622.0" y="92" width="336" height="44" rx="8" fill="#212830" stroke="#3d444d"/>
+<text x="790" y="118.5" font-size="13" fill="#e6edf3" font-weight="600" text-anchor="middle">getLabels()</text>
+<polyline points="790,136 790,152" fill="none" stroke="#767d86" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="622.0" y="154" width="336" height="46" rx="8" fill="#212830" stroke="#2b5233"/>
+<text x="790" y="176" font-size="13" fill="#e6edf3" font-weight="600" text-anchor="middle">US label &#8212; openFDA</text>
+<text x="790" y="194" font-size="11" fill="#9198a1" text-anchor="middle">cited to DailyMed</text>
+<polyline points="790,200 790,214" fill="none" stroke="#767d86" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="622.0" y="216" width="336" height="46" rx="8" fill="#212830" stroke="#2b5233"/>
+<text x="790" y="238" font-size="13" fill="#e6edf3" font-weight="600" text-anchor="middle">UK label &#8212; eMC SmPC</text>
+<text x="790" y="256" font-size="11" fill="#9198a1" text-anchor="middle">Summary of Product Characteristics</text>
+<polyline points="790,262 790,282" fill="none" stroke="#767d86" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="622.0" y="284" width="336" height="56" rx="8" fill="#2a2139" stroke="#ab7df8"/>
+<text x="790" y="306" font-size="13" fill="#ab7df8" font-weight="600" text-anchor="middle">Grounded summary</text>
+<text x="790" y="324" font-size="11" fill="#9198a1" text-anchor="middle">condenses only the text above</text>
+<polyline points="790,340 790,358" fill="none" stroke="#767d86" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="622.0" y="360" width="336" height="46" rx="8" fill="#122117" stroke="#2b5233"/>
+<text x="790" y="382" font-size="13" fill="#3fb950" font-weight="600" text-anchor="middle">Cache write</text>
+<text x="790" y="400" font-size="11" fill="#9198a1" text-anchor="middle">Firestore &#183; 30d / 1d TTL</text>
+<polyline points="790,406 790,424" fill="none" stroke="#3fb950" stroke-width="1.5" marker-end="url(#ag)"/>
+<rect x="622.0" y="426" width="336" height="44" rx="8" fill="#122117" stroke="#2b5233"/>
+<text x="790" y="452.5" font-size="13" fill="#3fb950" font-weight="600" text-anchor="middle">JSON response</text>
+<text x="500" y="536" font-size="12" fill="#e6edf3" font-weight="600" text-anchor="middle">A model is asked twice &#8212; as a flagged last resort for a name, and to summarise label text it was handed.</text>
+<text x="500" y="555" font-size="12" fill="#ab7df8" font-weight="700" text-anchor="middle">It never originates a clinical fact.</text>
+</svg>
