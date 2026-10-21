@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Removed the model-memory fallback. When a name isn't found in RxNorm, openFDA or the US/UK labels, the API now returns 404 `{ "notFound": true }` instead of asking a model to answer from memory, which could invent brand names and doses. Cached fallback answers are no longer served.
+
+### Security
+- Redeployed the hardened function (origin allowlist, input validation, per-IP rate limit) and moved it to a dedicated OpenAI key.
+
 ## [1.1.0] — 2026-08-28
 
 ### Added

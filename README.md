@@ -56,7 +56,7 @@ npx firebase-tools emulators:start --only functions
 ```
 
 No API keys needed for the deterministic core (name resolution + label fetch).
-To enable the AI summaries and last-resort fallback locally, add your key to
+To enable the AI summaries locally, add your key to
 `functions/.secret.local` (gitignored):
 
 ```bash

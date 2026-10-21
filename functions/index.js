@@ -1,6 +1,5 @@
 const functions = require("firebase-functions");
 const { defineSecret } = require("firebase-functions/params");
-const fetch = require("node-fetch");
 
 // === Abuse protection ===
 // Only these origins may call the public endpoint from a browser. Add any
@@ -241,56 +240,11 @@ async function buildConversion(name) {
     };
   }
 
-  console.log(`No authoritative match for "${name}" — falling back to OpenAI`);
-  return await callOpenAi(name);
-}
-
-function buildOpenAiPrompt(name) {
-  return `Convert the following drug name: ${name}.
-If it's a brand name, give the generic name. If it's a generic name, give common brand names in different countries.
-Also provide the following information:
-- Drug class and category
-- Common uses and indications
-- Typical dosage ranges
-- Common side effects (mild and serious)
-- Important warnings or precautions
-
-Present results as JSON with the following structure:
-{
-  "inputType": "brand" or "generic",
-  "inputName": "the exact input name",
-  "genericName": "generic name",
-  "brandNames": ["list", "of", "brand", "names", "by", "country"],
-  "drugClass": "drug classification",
-  "category": "pharmacological category",
-  "uses": ["list", "of", "common", "uses"],
-  "dosage": "typical dosage information",
-  "sideEffects": {
-    "mild": ["list", "of", "mild", "side", "effects"],
-    "serious": ["list", "of", "serious", "side", "effects"]
-  },
-  "warnings": ["list", "of", "important", "warnings"]
-}`;
-}
-
-async function callOpenAi(name) {
-  const apiKey = OPENAI_KEY.value();
-  const url = "https://api.openai.com/v1/chat/completions";
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: buildOpenAiPrompt(name) }],
-    }),
-  });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
-  }
-  const data = await response.json();
-  data._source = "openai";
-  return data;
+  // No authoritative match. We deliberately do NOT ask a model to answer from
+  // memory: that invented brand names and doses for made-up drugs. Every
+  // answer Pharmonym gives must come from RxNorm/openFDA/label data.
+  console.log(`No authoritative match for "${name}" — returning not found`);
+  return { notFound: true, _source: "none" };
 }
 
 exports.convertDrugName = functions
@@ -341,7 +295,9 @@ exports.convertDrugName = functions
           const expiryDate = new Date(createdAt);
           expiryDate.setDate(expiryDate.getDate() + ttlDays);
 
-          if (expiryDate > now) {
+          const fromModelFallback =
+            cachedData.response && cachedData.response._source === "openai";
+          if (expiryDate > now && !fromModelFallback) {
             console.log(`Cache hit for: ${normalizedName}`);
             return res.json(cachedData.response);
           } else {
@@ -364,13 +320,20 @@ exports.convertDrugName = functions
       return res.status(429).json({ error: "Too many requests. Please try again later." });
     }
 
-    // Produce the conversion (deterministic first, OpenAI fallback).
+    // Produce the conversion (deterministic only; no model fallback).
     let data;
     try {
       data = await buildConversion(name);
     } catch (error) {
       console.error("Error in conversion:", error);
       return res.status(500).json({ error: "Conversion failed", details: error.message });
+    }
+
+    if (data && data.notFound) {
+      return res.status(404).json({
+        notFound: true,
+        error: "Not found in FDA or UK drug labelling",
+      });
     }
 
     // === Enrich with authoritative label data (USPI / SmPC) ===
